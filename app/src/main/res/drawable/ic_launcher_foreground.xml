@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Outer Flame Crest -->
+    <path
+        android:fillColor="#FFFF2A3C"
+        android:pathData="M54,18 C62,28 76,32 76,48 C76,66 64,82 54,88 C44,82 32,66 32,48 C32,32 46,28 54,18 Z" />
+    <!-- Inner Gold Flame -->
+    <path
+        android:fillColor="#FFFACC15"
+        android:pathData="M54,28 C59,36 68,40 68,51 C68,63 60,74 54,79 C48,74 40,63 40,51 C40,40 49,36 54,28 Z" />
+    <!-- Esports Gamepad Silhouette -->
+    <path
+        android:fillColor="#FF0B0A14"
+        android:pathData="M42,46 H66 C70,46 73,49 74,53 L76,63 C76.5,66 74,69 71,69 C69,69 67.5,68 66,66 L63,62 H45 L42,66 C40.5,68 39,69 37,69 C34,69 31.5,66 32,63 L34,53 C35,49 38,46 42,46 Z" />
+    <!-- D-Pad Cross -->
+    <path
+        android:fillColor="#FFFF2A3C"
+        android:pathData="M43,51 H46 V54 H49 V57 H46 V60 H43 V57 H40 V54 H43 Z" />
+    <!-- Action Buttons -->
+    <path
+        android:fillColor="#FFFACC15"
+        android:pathData="M63,52 A2,2 0 1,1 63,56 A2,2 0 1,1 63,52 Z M67,55 A2,2 0 1,1 67,59 A2,2 0 1,1 67,55 Z" />
+</vector>

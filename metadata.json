@@ -1,0 +1,6 @@
+{
+  "name": "PYBattle",
+  "description": "PYBattle Free Fire & Free Fire MAX Esports Tournament Platform with 3-Bucket Wallet, Manual QR/UTR Verification, Leaderboards, Compliance Gate, and Admin Console.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

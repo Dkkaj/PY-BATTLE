@@ -1,0 +1,330 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "PLAYT24 player and operator profile with 3-bucket PlayCoin wallet, KYC, and compliance settings.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID of the user." },
+        "username": { "type": "string", "description": "Display name on PLAYT24." },
+        "email": { "type": "string", "description": "User email address." },
+        "phone": { "type": "string", "description": "10-digit Indian mobile number." },
+        "ffUid": { "type": "string", "description": "Free Fire / Free Fire MAX numeric player UID." },
+        "ffIgn": { "type": "string", "description": "Free Fire in-game name." },
+        "stateName": { "type": "string", "description": "Indian state of residence for geo-compliance." },
+        "ageVerified": { "type": "boolean", "description": "18+ age verification flag." },
+        "kycStatus": { "type": "string", "enum": ["UNVERIFIED", "PENDING", "VERIFIED", "REJECTED"] },
+        "kycPanNumber": { "type": "string", "description": "Masked or submitted PAN/ID number for KYC." },
+        "depositedCoins": { "type": "integer", "description": "PlayCoins added via deposit." },
+        "winningCoins": { "type": "integer", "description": "Withdrawable PlayCoins won in tournaments." },
+        "bonusCoins": { "type": "integer", "description": "Promotional PlayCoins (10% usable per match entry)." },
+        "matchesPlayed": { "type": "integer", "description": "Total tournaments played." },
+        "totalKills": { "type": "integer", "description": "Cumulative kills across tournaments." },
+        "totalCoinsWon": { "type": "integer", "description": "Cumulative PlayCoins won." },
+        "referralCode": { "type": "string", "description": "Unique referral code for this player." },
+        "referredBy": { "type": "string", "description": "Referral code used at signup." },
+        "role": { "type": "string", "enum": ["PLAYER", "ADMIN"] },
+        "isBanned": { "type": "boolean", "description": "Account ban/suspension status." },
+        "selfExcludedUntil": { "type": "integer", "description": "Epoch millis until which self-exclusion is active." },
+        "dailyDepositLimit": { "type": "integer", "description": "Responsible gaming daily deposit cap in INR." },
+        "language": { "type": "string", "enum": ["EN", "HI"] },
+        "importantNoticeEnabled": { "type": "boolean", "description": "Push/notice toggle." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp of creation." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp of last update." }
+      },
+      "required": [
+        "userId",
+        "username",
+        "email",
+        "ffUid",
+        "ffIgn",
+        "stateName",
+        "ageVerified",
+        "kycStatus",
+        "depositedCoins",
+        "winningCoins",
+        "bonusCoins",
+        "matchesPlayed",
+        "totalKills",
+        "totalCoinsWon",
+        "role",
+        "isBanned",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Tournament": {
+      "title": "Tournament",
+      "description": "Free Fire / Free Fire MAX esports tournament contest.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "gameMode": { "type": "string", "enum": ["FULL_MAP", "CLASH_SQUAD", "LONE_WOLF", "FREE_MATCH", "CUSTOM_ROOM"] },
+        "mapName": { "type": "string" },
+        "teamSize": { "type": "string", "enum": ["SOLO", "DUO", "SQUAD"] },
+        "entryFee": { "type": "integer" },
+        "prizePool": { "type": "integer" },
+        "perKillPrize": { "type": "integer" },
+        "booyahPrize": { "type": "integer" },
+        "rank2Prize": { "type": "integer" },
+        "rank3Prize": { "type": "integer" },
+        "totalSlots": { "type": "integer" },
+        "filledSlots": { "type": "integer" },
+        "startTimeEpochMillis": { "type": "integer" },
+        "status": { "type": "string", "enum": ["UPCOMING", "ONGOING", "COMPLETED", "CANCELLED"] },
+        "roomId": { "type": "string" },
+        "roomPassword": { "type": "string" },
+        "roomPublished": { "type": "boolean" },
+        "rulesText": { "type": "string" },
+        "createdByUid": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "title",
+        "gameMode",
+        "mapName",
+        "teamSize",
+        "entryFee",
+        "prizePool",
+        "perKillPrize",
+        "booyahPrize",
+        "totalSlots",
+        "filledSlots",
+        "startTimeEpochMillis",
+        "status",
+        "roomPublished",
+        "createdByUid",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Registration": {
+      "title": "Registration",
+      "description": "Player slot registration and result record for a tournament.",
+      "type": "object",
+      "properties": {
+        "tournamentId": { "type": "string" },
+        "tournamentTitle": { "type": "string" },
+        "gameMode": { "type": "string" },
+        "userId": { "type": "string" },
+        "username": { "type": "string" },
+        "ffUid": { "type": "string" },
+        "ffIgn": { "type": "string" },
+        "teammateInfo": { "type": "string" },
+        "slotNumber": { "type": "integer" },
+        "entryFeePaid": { "type": "integer" },
+        "depositedUsed": { "type": "integer" },
+        "winningUsed": { "type": "integer" },
+        "bonusUsed": { "type": "integer" },
+        "kills": { "type": "integer" },
+        "rankAchieved": { "type": "integer" },
+        "prizeWon": { "type": "integer" },
+        "proofText": { "type": "string" },
+        "disputeReason": { "type": "string" },
+        "status": { "type": "string", "enum": ["REGISTERED", "PLAYED", "REFUNDED", "DISPUTED"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "tournamentId",
+        "tournamentTitle",
+        "gameMode",
+        "userId",
+        "username",
+        "ffUid",
+        "ffIgn",
+        "slotNumber",
+        "entryFeePaid",
+        "depositedUsed",
+        "winningUsed",
+        "bonusUsed",
+        "kills",
+        "rankAchieved",
+        "prizeWon",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "WalletTransaction": {
+      "title": "WalletTransaction",
+      "description": "Double-entry PlayCoin wallet ledger transaction including manual QR UTR deposits and KYC withdrawals.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "username": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": [
+            "DEPOSIT_UTR",
+            "MATCH_ENTRY",
+            "MATCH_REFUND",
+            "MATCH_WINNING",
+            "WITHDRAWAL",
+            "BONUS_CREDIT",
+            "ADMIN_ADJUST"
+          ]
+        },
+        "amountCoins": { "type": "integer" },
+        "depositedDelta": { "type": "integer" },
+        "winningDelta": { "type": "integer" },
+        "bonusDelta": { "type": "integer" },
+        "status": { "type": "string", "enum": ["PENDING", "APPROVED", "COMPLETED", "REJECTED"] },
+        "utrNumber": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "gstAmountInr": { "type": "integer" },
+        "tdsAmountInr": { "type": "integer" },
+        "note": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId",
+        "username",
+        "type",
+        "amountCoins",
+        "depositedDelta",
+        "winningDelta",
+        "bonusDelta",
+        "status",
+        "utrNumber",
+        "paymentMethod",
+        "gstAmountInr",
+        "tdsAmountInr",
+        "note",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SupportTicket": {
+      "title": "SupportTicket",
+      "description": "Categorized player support ticket with anti-spam 1-open-per-category enforcement.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "username": { "type": "string" },
+        "category": {
+          "type": "string",
+          "enum": ["BR_SUPPORT", "CS_LW_SUPPORT", "HACKER_POV", "PAYMENT_SUPPORT"]
+        },
+        "subject": { "type": "string" },
+        "message": { "type": "string" },
+        "proofRef": { "type": "string" },
+        "adminReply": { "type": "string" },
+        "status": { "type": "string", "enum": ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId",
+        "username",
+        "category",
+        "subject",
+        "message",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "LeaderboardEntry": {
+      "title": "LeaderboardEntry",
+      "description": "Daily, Weekly, and Monthly Full Map leaderboard standings.",
+      "type": "object",
+      "properties": {
+        "period": { "type": "string", "enum": ["DAILY", "WEEKLY", "MONTHLY"] },
+        "position": { "type": "integer" },
+        "playerName": { "type": "string" },
+        "ffUid": { "type": "string" },
+        "winningCoins": { "type": "integer" },
+        "kills": { "type": "integer" },
+        "antiCheatClean": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "period",
+        "position",
+        "playerName",
+        "ffUid",
+        "winningCoins",
+        "kills",
+        "antiCheatClean",
+        "updatedAt"
+      ]
+    },
+    "PlatformConfig": {
+      "title": "PlatformConfig",
+      "description": "Global platform configuration and compliance kill-switch.",
+      "type": "object",
+      "properties": {
+        "configId": { "type": "string" },
+        "paidContestsEnabled": { "type": "boolean" },
+        "announcementTicker": { "type": "string" },
+        "upiId": { "type": "string" },
+        "merchantName": { "type": "string" },
+        "minWithdrawalCoins": { "type": "integer" },
+        "bonusUsagePercent": { "type": "integer" },
+        "blockedStatesCsv": { "type": "string" },
+        "whatsappChannelUrl": { "type": "string" },
+        "telegramChannelUrl": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "configId",
+        "paidContestsEnabled",
+        "announcementTicker",
+        "upiId",
+        "merchantName",
+        "minWithdrawalCoins",
+        "bonusUsagePercent",
+        "blockedStatesCsv",
+        "updatedAt"
+      ]
+    },
+    "AdminRole": {
+      "title": "AdminRole",
+      "description": "Operator role registry document for Admin Console access.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "roleName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "roleName", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Player and admin profiles."
+    },
+    "/tournaments/{tournamentId}": {
+      "schema": { "$ref": "#/entities/Tournament" },
+      "description": "Esports tournaments across all Free Fire modes."
+    },
+    "/registrations/{registrationId}": {
+      "schema": { "$ref": "#/entities/Registration" },
+      "description": "Player tournament registrations, slot bindings, and match results."
+    },
+    "/wallet_transactions/{txId}": {
+      "schema": { "$ref": "#/entities/WalletTransaction" },
+      "description": "3-Bucket PlayCoin wallet ledger entries."
+    },
+    "/support_tickets/{ticketId}": {
+      "schema": { "$ref": "#/entities/SupportTicket" },
+      "description": "Player support and anti-cheat POV tickets."
+    },
+    "/leaderboard_entries/{entryId}": {
+      "schema": { "$ref": "#/entities/LeaderboardEntry" },
+      "description": "Daily, weekly, and monthly leaderboard rows."
+    },
+    "/platform_config/{configId}": {
+      "schema": { "$ref": "#/entities/PlatformConfig" },
+      "description": "Global platform configuration and emergency paid contest kill-switch."
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminRole" },
+      "description": "Operator registry for Admin Console operations."
+    }
+  }
+}
