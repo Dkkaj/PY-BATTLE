@@ -8,7 +8,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout repository
@@ -23,6 +23,11 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Install Android SDK packages
+        run: |
+          sdkmanager --sdk_root="$ANDROID_HOME" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          yes | sdkmanager --licenses
+
       - name: Grant execute permission
         run: chmod +x gradlew
 
@@ -34,3 +39,4 @@ jobs:
         with:
           name: PYBattle-APK
           path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
