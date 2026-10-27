@@ -7,15 +7,12 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
@@ -31,14 +28,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.data.*
 import com.example.ui.ActiveOverlayScreen
-import com.example.ui.MainBottomTab
 import com.example.ui.Playt24ViewModel
 import com.example.ui.theme.*
 
@@ -46,122 +41,180 @@ import com.example.ui.theme.*
 fun Playt24ProfileTab(
     viewModel: Playt24ViewModel
 ) {
-    val context = LocalContext.current
     val profile by viewModel.userProfile.collectAsState()
-    val config by viewModel.platformConfig.collectAsState()
 
     var showEditModal by remember { mutableStateOf(false) }
     var showResponsibleGamingModal by remember { mutableStateOf(false) }
 
+    val matches = (profile?.matchesPlayed ?: 0L).coerceAtLeast(1L)
+    val kills = profile?.totalKills ?: 0L
+    val kdRatio = String.format(java.util.Locale.US, "%.2f", kills.toDouble() / matches.toDouble())
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(PlaytBgObsidian),
+            .testTag("profile_lazy_column"),
         contentPadding = PaddingValues(bottom = 28.dp)
     ) {
-        // 1. Crimson Header + Avatar + Verified Pill + 3-Column Stats Card (Matching Profile Screenshot)
+        // 1. OriginOS 7 Crystal Space Player ID Card
         item {
-            Box(
+            Surface(
+                color = CrystalGlassSurface,
+                shape = RoundedCornerShape(30.dp),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.4.dp,
+                    crystalSpecularBorderBrush(CrystalAuroraBlue)
+                ),
+                shadowElevation = 18.dp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(PlaytBgObsidian)
+                    .padding(14.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(175.dp)
-                        .background(PlaytCrimson)
-                )
-
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 18.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .background(crystalSurfaceBrush(CrystalAuroraViolet))
+                        .padding(20.dp)
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.img_pybattle_logo),
-                        contentDescription = "PYBattle Player Avatar",
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(CircleShape)
-                            .border(3.dp, Color.White, CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = profile?.username ?: "Prince",
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = Color.White,
-                            fontWeight = FontWeight.ExtraBold
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.img_pybattle_logo),
+                            contentDescription = "Operative Avatar",
+                            modifier = Modifier
+                                .size(68.dp)
+                                .clip(RoundedCornerShape(22.dp))
+                                .border(1.5.dp, CrystalSpecularHighlight, RoundedCornerShape(22.dp)),
+                            contentScale = ContentScale.Crop
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Surface(
-                            color = PlaytVerifiedGreen,
-                            shape = RoundedCornerShape(50)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = "${profile?.kycStatus ?: "Verified"} ✓",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold
+                                    text = profile?.username ?: "PYBattle Pro",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Black,
+                                    color = PlaytTextPrimary
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Surface(
+                                    color = if (profile?.kycStatus == "VERIFIED") {
+                                        PlaytVerifiedGreen.copy(alpha = 0.20f)
+                                    } else {
+                                        PlaytCoinGold.copy(alpha = 0.20f)
+                                    },
+                                    shape = RoundedCornerShape(50)
+                                ) {
+                                    Text(
+                                        text = if (profile?.kycStatus == "VERIFIED") "KYC VERIFIED" else "KYC PENDING",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = if (profile?.kycStatus == "VERIFIED") PlaytVerifiedGreen else PlaytCoinGold,
+                                        fontWeight = FontWeight.Black,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                            Text(
+                                text = "FF UID: ${profile?.ffUid?.ifBlank { "Not Linked" } ?: "Not Linked"} • IGN: ${profile?.ffIgn?.ifBlank { "Set IGN" } ?: "Set IGN"}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = CrystalAuroraBlue,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "State: ${profile?.stateName ?: "Maharashtra"} • Level ${((profile?.matchesPlayed ?: 0L) / 2L) + 1L}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = PlaytTextSecondary
+                            )
+                        }
+                        Surface(
+                            color = Color.White.copy(alpha = 0.10f),
+                            shape = CircleShape,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, CrystalSpecularHighlight),
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .clickable { showEditModal = true }
+                                .testTag("edit_profile_button")
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Edit Profile",
+                                    tint = PlaytCoinGold,
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
                         }
                     }
 
-                    Text(
-                        text = "${profile?.phone ?: "6201393486"} • FF UID: ${profile?.ffUid?.ifBlank { "Not Linked" } ?: "284910384"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.9f)
-                    )
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    // Stats Card (Matches Played / Total Kills / Coins Won / K/D)
-                    Card(
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .border(1.dp, PlaytCardBorder, RoundedCornerShape(16.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 16.dp, horizontal = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            ProfileStatItem(
-                                value = "${profile?.matchesPlayed ?: 4L}",
-                                label = "Matches Played",
-                                color = PlaytTextPrimary
-                            )
-                            Box(modifier = Modifier.width(1.dp).height(38.dp).background(PlaytCardBorder))
-                            ProfileStatItem(
-                                value = "${profile?.totalKills ?: 0L}",
-                                label = "Total Kills",
-                                color = PlaytCrimson
-                            )
-                            Box(modifier = Modifier.width(1.dp).height(38.dp).background(PlaytCardBorder))
-                            ProfileStatItem(
-                                value = "🪙 ${profile?.totalCoinsWon ?: 0L}",
-                                label = "Coins Won",
-                                color = PlaytCoinGold
-                            )
-                            Box(modifier = Modifier.width(1.dp).height(38.dp).background(PlaytCardBorder))
-                            ProfileStatItem(
-                                value = profile?.kdRatio ?: "0.00",
-                                label = "K/D Ratio",
-                                color = PlaytVerifiedGreen
+                        CrystalCareerStat("Matches", "${profile?.matchesPlayed ?: 0L}", CrystalAuroraBlue, Modifier.weight(1f))
+                        CrystalCareerStat("Kills", "${profile?.totalKills ?: 0L}", PlaytCrimson, Modifier.weight(1f))
+                        CrystalCareerStat("K/D", kdRatio, PlaytCoinGold, Modifier.weight(1f))
+                        CrystalCareerStat("Won", "₹${profile?.totalCoinsWon ?: 0L}", PlaytVerifiedGreen, Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+
+        // 2. OriginOS 7 Atomic Language Switcher
+        item {
+            Surface(
+                color = CrystalGlassSurface,
+                shape = RoundedCornerShape(24.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, crystalSpecularBorderBrush(CrystalAuroraBlue)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 4.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(crystalSurfaceBrush(CrystalAuroraBlue))
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "ORIGIN HUD LANGUAGE",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Black,
+                            color = PlaytTextPrimary
+                        )
+                        Text(
+                            text = "English & Hinglish spatial labels",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = PlaytTextSecondary
+                        )
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        listOf("EN" to "English", "HI" to "Hinglish").forEach { (code, label) ->
+                            val selected = (profile?.language ?: "EN") == code
+                            FilterChip(
+                                selected = selected,
+                                onClick = {
+                                    val p = profile ?: return@FilterChip
+                                    viewModel.updateProfileSettings(
+                                        username = p.username,
+                                        phone = p.phone,
+                                        ffUid = p.ffUid,
+                                        ffIgn = p.ffIgn,
+                                        stateName = p.stateName,
+                                        kycPanNumber = p.kycPanNumber,
+                                        dailyDepositLimit = p.dailyDepositLimit,
+                                        language = code,
+                                        importantNoticeEnabled = p.importantNoticeEnabled
+                                    )
+                                },
+                                shape = RoundedCornerShape(50),
+                                label = { Text(label, fontWeight = FontWeight.Black) }
                             )
                         }
                     }
@@ -169,179 +222,59 @@ fun Playt24ProfileTab(
             }
         }
 
-        // 2. Bilingual Language Switcher (English / Hinglish) & Important Notice Toggle
+        // 3. OriginOS 7 Spatial Settings Stack
         item {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(9.dp)
             ) {
-                // Important Notice Toggle Card
-                Card(
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark),
-                    modifier = Modifier.fillMaxWidth().border(1.dp, PlaytCardBorder, RoundedCornerShape(14.dp))
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = PlaytCrimson)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = viewModel.tr("Important Notice & Room Alerts", "Important Notice Aur Room Alerts"),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = PlaytTextPrimary
-                            )
-                        }
-                        Switch(
-                            checked = profile?.importantNoticeEnabled ?: true,
-                            onCheckedChange = { enabled ->
-                                val p = profile ?: return@Switch
-                                viewModel.updateProfileSettings(
-                                    username = p.username,
-                                    phone = p.phone,
-                                    ffUid = p.ffUid,
-                                    ffIgn = p.ffIgn,
-                                    stateName = p.stateName,
-                                    kycPanNumber = p.kycPanNumber,
-                                    dailyDepositLimit = p.dailyDepositLimit,
-                                    language = p.language,
-                                    importantNoticeEnabled = enabled
-                                )
-                            },
-                            colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = PlaytCrimson)
-                        )
-                    }
-                }
-
-                // Language Switcher Card
-                Card(
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark),
-                    modifier = Modifier.fillMaxWidth().border(1.dp, PlaytCardBorder, RoundedCornerShape(14.dp))
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Translate, contentDescription = null, tint = PlaytCoinGold)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = "App Language (EN / Hinglish)",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = PlaytTextPrimary
-                            )
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            listOf("EN" to "English", "HI" to "Hinglish").forEach { (code, label) ->
-                                val isSel = (profile?.language ?: "EN") == code
-                                FilterChip(
-                                    selected = isSel,
-                                    onClick = {
-                                        val p = profile ?: return@FilterChip
-                                        viewModel.updateProfileSettings(
-                                            username = p.username,
-                                            phone = p.phone,
-                                            ffUid = p.ffUid,
-                                            ffIgn = p.ffIgn,
-                                            stateName = p.stateName,
-                                            kycPanNumber = p.kycPanNumber,
-                                            dailyDepositLimit = p.dailyDepositLimit,
-                                            language = code,
-                                            importantNoticeEnabled = p.importantNoticeEnabled
-                                        )
-                                    },
-                                    label = { Text(label, fontSize = 12.sp) },
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = PlaytCrimson,
-                                        containerColor = PlaytSurfaceElevated
-                                    )
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Profile Menu Items (Matching Screenshot Menu List + Admin & Compliance)
-                ProfileMenuTile(
-                    icon = Icons.Default.Person,
-                    title = "My Profile, FF UID & KYC Verification",
-                    subtitle = "IGN: ${profile?.ffIgn ?: "PRINCE_FF"} • State: ${profile?.stateName ?: "Delhi"}",
+                OriginOsCommandTile(
+                    title = "Link Free Fire UID, IGN & PAN KYC",
+                    subtitle = "Verify KYC for instant Winning Coin withdrawals",
+                    icon = Icons.Default.Badge,
+                    accent = PlaytCoinGold,
                     onClick = { showEditModal = true }
                 )
-
-                ProfileMenuTile(
-                    icon = Icons.Default.AccountBalanceWallet,
-                    title = "My Wallet",
-                    subtitle = "Deposited, Winning & Bonus PlayCoins",
-                    onClick = { viewModel.selectBottomTab(MainBottomTab.WALLET) }
+                OriginOsCommandTile(
+                    title = "My Contests & Match Log",
+                    subtitle = "Ongoing, Upcoming & Completed Free Fire rooms",
+                    icon = Icons.Default.SportsEsports,
+                    accent = PlaytCrimson,
+                    onClick = { viewModel.openMyContests("UPCOMING") }
                 )
-
-                ProfileMenuTile(
-                    icon = Icons.Default.Leaderboard,
-                    title = "Top Players",
-                    subtitle = "Daily, Weekly & Monthly Leaderboards",
-                    onClick = { viewModel.selectBottomTab(MainBottomTab.RANKING) }
+                OriginOsCommandTile(
+                    title = "Crystal Vault Passbook & Invoices",
+                    subtitle = "Track PENDING / APPROVED UTR deposits & payouts",
+                    icon = Icons.Default.ReceiptLong,
+                    accent = CrystalAuroraBlue,
+                    onClick = { viewModel.openOverlay(ActiveOverlayScreen.TRANSACTION_HISTORY) }
                 )
-
-                ProfileMenuTile(
-                    icon = Icons.Default.AdminPanelSettings,
-                    title = "Operator Admin Console (Role-Based)",
-                    subtitle = "Manage Tournaments, Room IDs, UTR Queue & Results",
-                    accentColor = PlaytCoinGold,
-                    onClick = { viewModel.openAndEnableAdminConsole() }
-                )
-
-                ProfileMenuTile(
-                    icon = Icons.Default.SupportAgent,
-                    title = "Customer Support & Anti-Cheat POV",
-                    subtitle = "BR Support, CS/LW Support, Hacker Report & Payment Tickets",
-                    onClick = { viewModel.openOverlay(ActiveOverlayScreen.SUPPORT_CENTER) }
-                )
-
-                ProfileMenuTile(
-                    icon = Icons.Default.Shield,
+                OriginOsCommandTile(
                     title = "Responsible Gaming & Deposit Limits",
-                    subtitle = "Daily Limit: ₹${profile?.dailyDepositLimit ?: 2000L} • Self-Exclusion Controls",
+                    subtitle = "Daily deposit cap (₹${profile?.dailyDepositLimit ?: 2000L}) & self-exclusion",
+                    icon = Icons.Default.HealthAndSafety,
+                    accent = PlaytVerifiedGreen,
                     onClick = { showResponsibleGamingModal = true }
                 )
-
-                ProfileMenuTile(
+                OriginOsCommandTile(
+                    title = "24x7 Esports Support & Anti-Cheat Desk",
+                    subtitle = "Raise match, UTR payment, or hacker POV tickets",
+                    icon = Icons.Default.SupportAgent,
+                    accent = CrystalAuroraBlue,
+                    onClick = { viewModel.openOverlay(ActiveOverlayScreen.SUPPORT_CENTER) }
+                )
+                OriginOsCommandTile(
+                    title = "Legal, Fair Play & Grievance Officer",
+                    subtitle = "Skill gaming compliance, TDS/GST rules & contact",
                     icon = Icons.Default.Gavel,
-                    title = "Grievance Officer, Privacy & T&C",
-                    subtitle = "18+ Skill Gaming Charter, State Geo-Block & GST/TDS Policy",
+                    accent = PlaytCoinGold,
                     onClick = { viewModel.openOverlay(ActiveOverlayScreen.COMPLIANCE_LEGAL) }
                 )
-
-                ProfileMenuTile(
-                    icon = Icons.Default.PlayCircleOutline,
-                    title = "App Tutorial & Official Channels",
-                    subtitle = "How to join Custom Rooms & upload Booyah POV",
-                    onClick = {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(config.whatsappChannelUrl))
-                        try {
-                            context.startActivity(intent)
-                        } catch (_: Exception) {
-                            viewModel.showMessage("Official Channel: ${config.whatsappChannelUrl}")
-                        }
-                    }
-                )
-
-                ProfileMenuTile(
+                OriginOsCommandTile(
+                    title = "Sign Out of PYBattle",
+                    subtitle = "Disconnect current Google account",
                     icon = Icons.AutoMirrored.Filled.Logout,
-                    title = "Log Out",
-                    subtitle = "Sign out of your PYBattle Google account",
-                    accentColor = PlaytDanger,
+                    accent = PlaytDanger,
                     onClick = { viewModel.signOut() }
                 )
             }
@@ -349,54 +282,56 @@ fun Playt24ProfileTab(
     }
 
     if (showEditModal) {
-        val p = profile ?: UserProfile()
-        var nameInput by remember(p) { mutableStateOf(p.username) }
-        var phoneInput by remember(p) { mutableStateOf(p.phone) }
-        var uidInput by remember(p) { mutableStateOf(p.ffUid) }
-        var ignInput by remember(p) { mutableStateOf(p.ffIgn) }
-        var stateInput by remember(p) { mutableStateOf(p.stateName) }
-        var panInput by remember(p) { mutableStateOf(p.kycPanNumber) }
+        val current = profile ?: UserProfile()
+        var username by remember { mutableStateOf(current.username) }
+        var phone by remember { mutableStateOf(current.phone) }
+        var ffUid by remember { mutableStateOf(current.ffUid) }
+        var ffIgn by remember { mutableStateOf(current.ffIgn) }
+        var stateName by remember { mutableStateOf(current.stateName) }
+        var panNumber by remember { mutableStateOf(current.kycPanNumber) }
 
         AlertDialog(
             onDismissRequest = { showEditModal = false },
             containerColor = PlaytSurfaceDark,
-            title = { Text("Edit Profile, FF UID & KYC", color = PlaytTextPrimary) },
+            shape = RoundedCornerShape(28.dp),
+            title = {
+                Text(
+                    text = "EDIT PROFILE & KYC",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Black,
+                    color = PlaytCoinGold
+                )
+            },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
-                        value = nameInput,
-                        onValueChange = { nameInput = it },
+                        value = username,
+                        onValueChange = { username = it },
                         label = { Text("Display Name") },
                         singleLine = true
                     )
                     OutlinedTextField(
-                        value = phoneInput,
-                        onValueChange = { phoneInput = it },
-                        label = { Text("Phone / WhatsApp Number") },
+                        value = ffUid,
+                        onValueChange = { ffUid = it },
+                        label = { Text("Free Fire Numeric UID") },
                         singleLine = true
                     )
                     OutlinedTextField(
-                        value = uidInput,
-                        onValueChange = { uidInput = it },
-                        label = { Text("Free Fire MAX Numeric UID") },
-                        singleLine = true
-                    )
-                    OutlinedTextField(
-                        value = ignInput,
-                        onValueChange = { ignInput = it },
+                        value = ffIgn,
+                        onValueChange = { ffIgn = it },
                         label = { Text("Free Fire In-Game Name (IGN)") },
                         singleLine = true
                     )
                     OutlinedTextField(
-                        value = stateInput,
-                        onValueChange = { stateInput = it },
-                        label = { Text("Indian State (Geo-Compliance)") },
+                        value = stateName,
+                        onValueChange = { stateName = it },
+                        label = { Text("State (Geo-Compliance)") },
                         singleLine = true
                     )
                     OutlinedTextField(
-                        value = panInput,
-                        onValueChange = { panInput = it.uppercase().take(10) },
-                        label = { Text("10-Char PAN for KYC Verification") },
+                        value = panNumber,
+                        onValueChange = { panNumber = it.uppercase().take(10) },
+                        label = { Text("10-Char PAN Number (KYC)") },
                         singleLine = true
                     )
                 }
@@ -406,66 +341,60 @@ fun Playt24ProfileTab(
                     onClick = {
                         showEditModal = false
                         viewModel.updateProfileSettings(
-                            username = nameInput,
-                            phone = phoneInput,
-                            ffUid = uidInput,
-                            ffIgn = ignInput,
-                            stateName = stateInput,
-                            kycPanNumber = panInput,
-                            dailyDepositLimit = p.dailyDepositLimit,
-                            language = p.language,
-                            importantNoticeEnabled = p.importantNoticeEnabled
+                            username = username,
+                            phone = phone,
+                            ffUid = ffUid,
+                            ffIgn = ffIgn,
+                            stateName = stateName,
+                            kycPanNumber = panNumber,
+                            dailyDepositLimit = current.dailyDepositLimit,
+                            language = current.language,
+                            importantNoticeEnabled = current.importantNoticeEnabled
                         )
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = PlaytCrimson)
+                    colors = ButtonDefaults.buttonColors(containerColor = PlaytVerifiedGreen),
+                    shape = RoundedCornerShape(50)
                 ) {
-                    Text("SAVE PROFILE")
+                    Text("SAVE", color = Color.Black, fontWeight = FontWeight.Black)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showEditModal = false }) {
-                    Text("Cancel", color = PlaytTextSecondary)
+                    Text("CANCEL", color = PlaytTextSecondary)
                 }
             }
         )
     }
 
     if (showResponsibleGamingModal) {
-        val p = profile ?: UserProfile()
-        var limitText by remember(p) { mutableStateOf(p.dailyDepositLimit.toString()) }
-        var coolOffHours by remember { mutableIntStateOf(0) }
+        val current = profile ?: UserProfile()
+        var limitInput by remember { mutableStateOf(current.dailyDepositLimit.toString()) }
 
         AlertDialog(
             onDismissRequest = { showResponsibleGamingModal = false },
             containerColor = PlaytSurfaceDark,
-            title = { Text("Responsible Gaming Controls", color = PlaytCoinGold) },
+            shape = RoundedCornerShape(28.dp),
+            title = {
+                Text(
+                    text = "RESPONSIBLE ESPORTS CONTROLS",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Black,
+                    color = PlaytVerifiedGreen
+                )
+            },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        "Set your daily deposit limit and optional self-exclusion cool-off timer to keep esports play healthy and responsible.",
+                        text = "Configure your daily PlayCoin deposit cap.",
                         style = MaterialTheme.typography.bodySmall,
                         color = PlaytTextSecondary
                     )
                     OutlinedTextField(
-                        value = limitText,
-                        onValueChange = { limitText = it.filter { ch -> ch.isDigit() }.take(5) },
-                        label = { Text("Daily Deposit Limit (₹)") },
+                        value = limitInput,
+                        onValueChange = { limitInput = it.filter { ch -> ch.isDigit() } },
+                        label = { Text("Daily Deposit Limit (₹100 - ₹50,000)") },
                         singleLine = true
                     )
-                    Text("Optional Self-Exclusion Cool-Off:", style = MaterialTheme.typography.labelMedium, color = PlaytTextPrimary)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf(0 to "Active", 24 to "24h Pause", 72 to "3d Pause").forEach { (hrs, label) ->
-                            FilterChip(
-                                selected = coolOffHours == hrs,
-                                onClick = { coolOffHours = hrs },
-                                label = { Text(label) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = PlaytCrimson,
-                                    containerColor = PlaytSurfaceElevated
-                                )
-                            )
-                        }
-                    }
                 }
             },
             confirmButton = {
@@ -473,26 +402,26 @@ fun Playt24ProfileTab(
                     onClick = {
                         showResponsibleGamingModal = false
                         viewModel.updateProfileSettings(
-                            username = p.username,
-                            phone = p.phone,
-                            ffUid = p.ffUid,
-                            ffIgn = p.ffIgn,
-                            stateName = p.stateName,
-                            kycPanNumber = p.kycPanNumber,
-                            dailyDepositLimit = limitText.toLongOrNull() ?: 2000L,
-                            language = p.language,
-                            importantNoticeEnabled = p.importantNoticeEnabled,
-                            selfExclusionHours = coolOffHours
+                            username = current.username,
+                            phone = current.phone,
+                            ffUid = current.ffUid,
+                            ffIgn = current.ffIgn,
+                            stateName = current.stateName,
+                            kycPanNumber = current.kycPanNumber,
+                            dailyDepositLimit = limitInput.toLongOrNull() ?: 2000L,
+                            language = current.language,
+                            importantNoticeEnabled = current.importantNoticeEnabled
                         )
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = PlaytVerifiedGreen)
+                    colors = ButtonDefaults.buttonColors(containerColor = PlaytVerifiedGreen),
+                    shape = RoundedCornerShape(50)
                 ) {
-                    Text("APPLY LIMITS")
+                    Text("UPDATE LIMIT", color = Color.Black, fontWeight = FontWeight.Black)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showResponsibleGamingModal = false }) {
-                    Text("Cancel", color = PlaytTextSecondary)
+                    Text("CLOSE", color = PlaytTextSecondary)
                 }
             }
         )
@@ -500,68 +429,93 @@ fun Playt24ProfileTab(
 }
 
 @Composable
-private fun ProfileStatItem(
-    value: String,
+private fun CrystalCareerStat(
     label: String,
-    color: Color
+    value: String,
+    accent: Color,
+    modifier: Modifier = Modifier
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleLarge,
-            color = color,
-            fontWeight = FontWeight.ExtraBold
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = PlaytTextSecondary
-        )
+    Surface(
+        color = Color.White.copy(alpha = 0.08f),
+        shape = RoundedCornerShape(18.dp),
+        border = androidx.compose.foundation.BorderStroke(0.8.dp, CrystalSpecularHighlight),
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier.padding(vertical = 10.dp, horizontal = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Black,
+                color = accent,
+                maxLines = 1
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = PlaytTextSecondary,
+                fontSize = 10.sp
+            )
+        }
     }
 }
 
 @Composable
-private fun ProfileMenuTile(
-    icon: ImageVector,
+private fun OriginOsCommandTile(
     title: String,
     subtitle: String,
-    accentColor: Color = PlaytCrimson,
+    icon: ImageVector,
+    accent: Color,
     onClick: () -> Unit
 ) {
-    Card(
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark),
+    Surface(
+        color = CrystalGlassSurface,
+        shape = RoundedCornerShape(24.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, crystalSpecularBorderBrush(accent)),
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, PlaytCardBorder, RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(24.dp))
             .clickable { onClick() }
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .background(crystalSurfaceBrush(accent))
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(accent.copy(alpha = 0.18f))
+                    .border(0.8.dp, CrystalSpecularHighlight, RoundedCornerShape(14.dp)),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = title, tint = accentColor, modifier = Modifier.size(22.dp))
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = PlaytTextPrimary,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = PlaytTextSecondary
-                    )
-                }
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = accent,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Black,
+                    color = PlaytTextPrimary
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = PlaytTextSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
@@ -576,234 +530,245 @@ private fun ProfileMenuTile(
 fun SupportCenterScreen(
     viewModel: Playt24ViewModel
 ) {
+    val context = LocalContext.current
+    val tickets by viewModel.supportTickets.collectAsState()
+    val config by viewModel.platformConfig.collectAsState()
+
     BackHandler { viewModel.navigateBack() }
 
-    val tickets by viewModel.supportTickets.collectAsState()
-    var selectedCategory by remember { mutableStateOf("BR_SUPPORT") }
+    var selectedCategory by remember { mutableStateOf("MATCH_ISSUE") }
     var subjectInput by remember { mutableStateOf("") }
     var messageInput by remember { mutableStateOf("") }
-    var proofLinkInput by remember { mutableStateOf("") }
+    var proofInput by remember { mutableStateOf("") }
 
-    val categories = listOf(
-        Triple("BR_SUPPORT", "BR Support", R.drawable.img_support_br),
-        Triple("CS_LW_SUPPORT", "CS & LW Support", R.drawable.img_support_cs),
-        Triple("HACKER_POV", "POV / Hacker Report", R.drawable.img_support_pov),
-        Triple("PAYMENT_SUPPORT", "Withdraw / Add Cash", R.drawable.img_support_cash)
+    val guideBadges = listOf(
+        Triple(R.drawable.img_support_br, "BR Full Map Rules", "Minimum Level 40 • No Emulator"),
+        Triple(R.drawable.img_support_cs, "CS 4v4 Custom Rules", "Headshot & Grenade Policy"),
+        Triple(R.drawable.img_support_pov, "HUD & Screen POV", "Mandatory for Hacker Reports"),
+        Triple(R.drawable.img_support_cash, "UTR & Payout Guide", "Admin Verified UTR Credit")
     )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(PlaytBgObsidian)
-    ) {
-        Surface(color = PlaytCrimson) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { viewModel.navigateBack() }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-                }
-                Column {
-                    Text(
-                        text = "Customer Support & Anti-Cheat Desk",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Anti-Spam Rule: Max 1 Open Ticket per Category",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.White.copy(alpha = 0.85f)
-                    )
-                }
-            }
-        }
+    Column(modifier = Modifier.fillMaxSize()) {
+        OverlayTopAppBar(
+            title = "24x7 ESPORTS SUPPORT",
+            onBack = { viewModel.navigateBack() }
+        )
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(14.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // 4 Categorized Support Cards with Extracted Artwork (Matching Customer Support Screenshot)
             item {
                 Text(
-                    text = "SELECT ISSUE CATEGORY",
-                    style = MaterialTheme.typography.labelMedium,
+                    text = "OFFICIAL TOURNAMENT GUIDES",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Black,
                     color = PlaytCoinGold
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    categories.forEach { (catId, title, imgRes) ->
-                        val isSel = selectedCategory == catId
-                        val hasOpenTicket = tickets.any { it.category == catId && (it.status == "OPEN" || it.status == "IN_PROGRESS") }
-                        Card(
-                            shape = RoundedCornerShape(14.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (isSel) PlaytSurfaceElevated else PlaytSurfaceDark
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .border(
-                                    1.5.dp,
-                                    if (isSel) PlaytCrimson else PlaytCardBorder,
-                                    RoundedCornerShape(14.dp)
-                                )
-                                .clickable { selectedCategory = catId }
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                guideBadges.chunked(2).forEach { rowItems ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        rowItems.forEach { (imgRes, title, sub) ->
+                            Surface(
+                                color = CrystalGlassSurface,
+                                shape = RoundedCornerShape(22.dp),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, crystalSpecularBorderBrush(CrystalAuroraBlue)),
+                                modifier = Modifier.weight(1f)
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    modifier = Modifier
+                                        .background(crystalSurfaceBrush(CrystalAuroraBlue))
+                                        .padding(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
                                     Image(
                                         painter = painterResource(id = imgRes),
                                         contentDescription = title,
-                                        contentScale = ContentScale.Crop,
                                         modifier = Modifier
-                                            .size(52.dp)
-                                            .clip(CircleShape)
-                                            .border(1.dp, PlaytCoinGold, CircleShape)
+                                            .size(42.dp)
+                                            .clip(CircleShape),
+                                        contentScale = ContentScale.Crop
                                     )
-                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     Column {
                                         Text(
                                             text = title,
-                                            style = MaterialTheme.typography.titleMedium,
-                                            color = PlaytTextPrimary,
-                                            fontWeight = FontWeight.Bold
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Black,
+                                            color = PlaytTextPrimary
                                         )
                                         Text(
-                                            text = if (hasOpenTicket) "Active Ticket Open" else "Tap to select & raise ticket",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = if (hasOpenTicket) PlaytWarning else PlaytTextSecondary
+                                            text = sub,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = PlaytTextSecondary,
+                                            fontSize = 10.sp
                                         )
                                     }
                                 }
-
-                                RadioButton(
-                                    selected = isSel,
-                                    onClick = { selectedCategory = catId },
-                                    colors = RadioButtonDefaults.colors(selectedColor = PlaytCrimson)
-                                )
                             }
                         }
                     }
                 }
             }
 
-            // Ticket Form
             item {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark),
-                    modifier = Modifier.fillMaxWidth().border(1.dp, PlaytCardBorder, RoundedCornerShape(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = {
+                            runCatching {
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(config.telegramChannelUrl)))
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = CrystalAuroraBlue),
+                        shape = RoundedCornerShape(50),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("TELEGRAM DESK", color = Color.Black, fontWeight = FontWeight.Black)
+                    }
+                    Button(
+                        onClick = {
+                            runCatching {
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(config.whatsappChannelUrl)))
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = PlaytCrimson),
+                        shape = RoundedCornerShape(50),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("WHATSAPP CHANNEL", fontWeight = FontWeight.Black)
+                    }
+                }
+            }
+
+            item {
+                Surface(
+                    color = CrystalGlassSurface,
+                    shape = RoundedCornerShape(26.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.1.dp, crystalSpecularBorderBrush(CrystalAuroraViolet)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .background(crystalSurfaceBrush(CrystalAuroraViolet))
+                            .padding(16.dp)
+                    ) {
                         Text(
-                            text = "RAISE NEW TICKET ($selectedCategory)",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = PlaytTextPrimary,
-                            fontWeight = FontWeight.Bold
+                            text = "CREATE SUPPORT TICKET (1 ACTIVE PER CATEGORY)",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Black,
+                            color = PlaytTextPrimary
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            listOf("MATCH_ISSUE", "PAYMENT_UTR", "WITHDRAWAL", "HACKER_POV").forEach { cat ->
+                                FilterChip(
+                                    selected = selectedCategory == cat,
+                                    onClick = { selectedCategory = cat },
+                                    shape = RoundedCornerShape(50),
+                                    label = {
+                                        Text(
+                                            text = cat.replace("_", " "),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
                         OutlinedTextField(
                             value = subjectInput,
                             onValueChange = { subjectInput = it },
-                            label = { Text("Match ID / UTR / Issue Subject *") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth().testTag("ticket_subject_input")
-                        )
-                        OutlinedTextField(
-                            value = messageInput,
-                            onValueChange = { messageInput = it },
-                            label = { Text("Describe the issue in detail *") },
-                            modifier = Modifier.fillMaxWidth().testTag("ticket_message_input")
-                        )
-                        OutlinedTextField(
-                            value = proofLinkInput,
-                            onValueChange = { proofLinkInput = it },
-                            label = { Text("HUD POV / Screenshot Reference (Optional)") },
+                            label = { Text("Issue Subject / Match ID") },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = messageInput,
+                            onValueChange = { messageInput = it },
+                            label = { Text("Detailed Description") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = proofInput,
+                            onValueChange = { proofInput = it },
+                            label = { Text("UTR / Screenshot / Hacker POV Reference") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
                         Button(
                             onClick = {
-                                if (subjectInput.isBlank() || messageInput.isBlank()) {
-                                    viewModel.showMessage("Please enter both subject and issue description.", isError = true)
-                                    return@Button
-                                }
                                 viewModel.createSupportTicket(
                                     category = selectedCategory,
                                     subject = subjectInput,
                                     message = messageInput,
-                                    proofRef = proofLinkInput
+                                    proofRef = proofInput
                                 )
                                 subjectInput = ""
                                 messageInput = ""
-                                proofLinkInput = ""
+                                proofInput = ""
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = PlaytCrimson),
-                            modifier = Modifier.fillMaxWidth().testTag("submit_ticket_button")
+                            shape = RoundedCornerShape(50),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("SUBMIT SUPPORT TICKET", fontWeight = FontWeight.Bold)
+                            Text("SUBMIT TICKET", fontWeight = FontWeight.Black)
                         }
                     }
                 }
             }
 
-            // My Ticket History & Admin Replies
-            item {
-                Text(
-                    text = "MY SUPPORT TICKETS (${tickets.size})",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = PlaytTextPrimary,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
             items(tickets, key = { it.id }) { tkt ->
-                Card(
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark),
-                    modifier = Modifier.fillMaxWidth().border(1.dp, PlaytCardBorder, RoundedCornerShape(14.dp))
+                Surface(
+                    color = CrystalGlassSurface,
+                    shape = RoundedCornerShape(22.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, crystalSpecularBorderBrush(CrystalAuroraBlue)),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
+                    Column(
+                        modifier = Modifier
+                            .background(crystalSurfaceBrush(CrystalAuroraBlue))
+                            .padding(14.dp)
+                    ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "[${tkt.category}] ${tkt.subject}",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = PlaytCoinGold,
-                                fontWeight = FontWeight.Bold
+                                text = "${tkt.category} • ${tkt.subject}",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Black,
+                                color = PlaytTextPrimary
                             )
                             Text(
                                 text = tkt.status,
                                 style = MaterialTheme.typography.labelSmall,
-                                color = if (tkt.status == "RESOLVED") PlaytVerifiedGreen else PlaytWarning,
-                                fontWeight = FontWeight.Bold
+                                color = PlaytCoinGold,
+                                fontWeight = FontWeight.Black
                             )
                         }
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(tkt.message, style = MaterialTheme.typography.bodySmall, color = PlaytTextPrimary)
+                        Text(tkt.message, style = MaterialTheme.typography.bodySmall, color = PlaytTextSecondary)
                         if (tkt.adminReply.isNotBlank()) {
                             Spacer(modifier = Modifier.height(6.dp))
-                            Surface(
-                                color = PlaytSurfaceElevated,
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    text = "👨‍💻 Admin Reply: ${tkt.adminReply}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = PlaytVerifiedGreen,
-                                    modifier = Modifier.padding(8.dp)
-                                )
-                            }
+                            Text(
+                                text = "Admin Reply: ${tkt.adminReply}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = PlaytVerifiedGreen,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
@@ -816,605 +781,106 @@ fun SupportCenterScreen(
 fun ComplianceAndGrievanceScreen(
     viewModel: Playt24ViewModel
 ) {
-    BackHandler { viewModel.navigateBack() }
     val config by viewModel.platformConfig.collectAsState()
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(PlaytBgObsidian)
-    ) {
-        Surface(color = PlaytSurfaceDark) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { viewModel.navigateBack() }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-                }
-                Text(
-                    text = "COMPLIANCE, LEGAL & GRIEVANCE OFFICER",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item {
-                ComplianceInfoCard(
-                    title = "1. Esports Skill-Based Format Only",
-                    body = "PYBattle operates strictly as a Free Fire / Free Fire MAX esports tournament organizer. Entry fees are registration fees for organized custom rooms with fixed, predetermined performance prize pools (Rank & Per-Kill). Betting, wagering, odds, or user-vs-user side stakes are strictly prohibited."
-                )
-            }
-            item {
-                ComplianceInfoCard(
-                    title = "2. State Geo-Restriction List",
-                    body = "Paid entry contests are restricted for residents of: ${config.blockedStatesCsv}. Players from restricted states may only participate in ₹0 Free Practice Matches."
-                )
-            }
-            item {
-                ComplianceInfoCard(
-                    title = "3. Statutory GST (28%) & TDS (30% Sec 194BA)",
-                    body = "All deposits include statutory 28% GST accounting, and net winnings withdrawals are subject to 30% TDS under Section 194BA of the Income Tax Act. Downloadable tax breakdowns are available in Wallet → Transaction History."
-                )
-            }
-            item {
-                ComplianceInfoCard(
-                    title = "4. Grievance Redressal Officer (India)",
-                    body = "Grievance Officer: Vikram Aditya Sharma (PYBattle Compliance Desk)\nEmail: grievance@pybattleesports.in\nResolution SLA: Acknowledgement within 24 hours; resolution within 15 days as per IT Rules 2021."
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ComplianceInfoCard(title: String, body: String) {
-    Card(
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark),
-        modifier = Modifier.fillMaxWidth().border(1.dp, PlaytCardBorder, RoundedCornerShape(14.dp))
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, color = PlaytCoinGold, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(body, style = MaterialTheme.typography.bodySmall, color = PlaytTextSecondary)
-        }
-    }
-}
-
-@Composable
-fun AdminConsoleScreen(
-    viewModel: Playt24ViewModel
-) {
     BackHandler { viewModel.navigateBack() }
 
-    val config by viewModel.platformConfig.collectAsState()
-    val upcoming by viewModel.upcomingTournaments.collectAsState()
-    val ongoing by viewModel.ongoingTournaments.collectAsState()
-    val adminTxs by viewModel.adminTransactions.collectAsState()
-    val adminTickets by viewModel.adminTickets.collectAsState()
-    val adminUsers by viewModel.adminUsers.collectAsState()
-    val selectedTourneyRegs by viewModel.selectedTournamentRegistrations.collectAsState()
-
-    var adminTab by remember { mutableStateOf("DASHBOARD") }
-    val adminTabs = listOf("DASHBOARD", "TOURNEYS", "RESULTS", "FINANCE", "USERS & SUPPORT")
-
-    val allTourneys = upcoming + ongoing
-    var selectedResultTourney by remember(allTourneys) { mutableStateOf(allTourneys.firstOrNull()) }
-
-    LaunchedEffect(selectedResultTourney?.id) {
-        selectedResultTourney?.id?.let { viewModel.observeTournamentRegistrations(it) }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(PlaytBgObsidian)
-    ) {
-        Surface(color = PlaytSurfaceDark) {
-            Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = { viewModel.navigateBack() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-                        }
-                        Column {
-                            Text(
-                                text = "PYBattle ADMIN CONSOLE",
-                                style = MaterialTheme.typography.titleLarge,
-                                color = PlaytCoinGold,
-                                fontWeight = FontWeight.ExtraBold
-                            )
-                            Text(
-                                text = "Role: SUPER_ADMIN • Audit Trail Active",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = PlaytVerifiedGreen
-                            )
-                        }
-                    }
-                }
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    adminTabs.forEach { tab ->
-                        FilterChip(
-                            selected = adminTab == tab,
-                            onClick = { adminTab = tab },
-                            label = { Text(tab, fontWeight = FontWeight.Bold) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = PlaytCrimson,
-                                containerColor = PlaytSurfaceElevated
-                            )
-                        )
-                    }
-                }
-            }
-        }
+    Column(modifier = Modifier.fillMaxSize()) {
+        OverlayTopAppBar(
+            title = "LEGAL & GRIEVANCE CELL",
+            onBack = { viewModel.navigateBack() }
+        )
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(14.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            when (adminTab) {
-                "DASHBOARD" -> {
-                    item {
-                        val pendingUtrs = adminTxs.count { it.type == "DEPOSIT_UTR" && it.status == "PENDING" }
-                        val pendingWithdrawals = adminTxs.count { it.type == "WITHDRAWAL" && it.status == "PENDING" }
-                        val totalDeposits = adminTxs.filter { it.type == "DEPOSIT_UTR" && it.status == "APPROVED" }.sumOf { it.depositedDelta }
-                        val totalPayouts = adminTxs.filter { it.type == "MATCH_WINNING" }.sumOf { it.amountCoins }
-
-                        Card(
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark),
-                            modifier = Modifier.fillMaxWidth().border(1.dp, PlaytCardBorder, RoundedCornerShape(16.dp))
-                        ) {
-                            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                Text("LIVE PLATFORM KPI METRICS", style = MaterialTheme.typography.titleMedium, color = PlaytCoinGold, fontWeight = FontWeight.Bold)
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    MetricPill("Registered Players", "${adminUsers.size}", PlaytElectricBlue)
-                                    MetricPill("Active Rooms", "${allTourneys.size}", PlaytVerifiedGreen)
-                                    MetricPill("Pending UTRs", "$pendingUtrs", PlaytWarning)
-                                }
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    MetricPill("Approved Deposits", "₹$totalDeposits", PlaytVerifiedGreen)
-                                    MetricPill("Prizes Credited", "🪙 $totalPayouts", PlaytCoinGold)
-                                    MetricPill("Withdraw Queue", "$pendingWithdrawals", PlaytCrimson)
-                                }
-                            }
-                        }
-                    }
-
-                    // Instant Paid Contest Compliance Kill-Switch
-                    item {
-                        var tickerInput by remember(config.announcementTicker) { mutableStateOf(config.announcementTicker) }
-                        var blockedInput by remember(config.blockedStatesCsv) { mutableStateOf(config.blockedStatesCsv) }
-
-                        Card(
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = PlaytSurfaceElevated),
-                            modifier = Modifier.fillMaxWidth().border(1.dp, PlaytCrimson, RoundedCornerShape(16.dp))
-                        ) {
-                            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = "EMERGENCY COMPLIANCE KILL-SWITCH",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            color = PlaytCrimson,
-                                            fontWeight = FontWeight.ExtraBold
-                                        )
-                                        Text(
-                                            text = "Instantly enable/disable all Paid Contests across India while keeping Free Matches open.",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = PlaytTextSecondary
-                                        )
-                                    }
-                                    Switch(
-                                        checked = config.paidContestsEnabled,
-                                        onCheckedChange = { enabled ->
-                                            viewModel.adminUpdatePlatformConfig(config.copy(paidContestsEnabled = enabled))
-                                        },
-                                        colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = PlaytVerifiedGreen),
-                                        modifier = Modifier.testTag("admin_paid_contests_switch")
-                                    )
-                                }
-
-                                OutlinedTextField(
-                                    value = tickerInput,
-                                    onValueChange = { tickerInput = it },
-                                    label = { Text("Home Announcement Marquee Ticker") },
-                                    singleLine = true,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-
-                                OutlinedTextField(
-                                    value = blockedInput,
-                                    onValueChange = { blockedInput = it },
-                                    label = { Text("Geo-Blocked States CSV") },
-                                    singleLine = true,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-
-                                Button(
-                                    onClick = {
-                                        viewModel.adminUpdatePlatformConfig(
-                                            config.copy(
-                                                announcementTicker = tickerInput,
-                                                blockedStatesCsv = blockedInput
-                                            )
-                                        )
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = PlaytCrimson),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text("SAVE GLOBAL COMPLIANCE CONFIG", fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                "TOURNEYS" -> {
-                    // Create Tournament Card
-                    item {
-                        var title by remember { mutableStateOf("FF MAX Pro Survival Scrims") }
-                        var mode by remember { mutableStateOf("FULL_MAP") }
-                        var mapName by remember { mutableStateOf("Bermuda") }
-                        var fee by remember { mutableStateOf("20") }
-                        var pool by remember { mutableStateOf("800") }
-                        var perKill by remember { mutableStateOf("10") }
-                        var booyah by remember { mutableStateOf("300") }
-
-                        Card(
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark),
-                            modifier = Modifier.fillMaxWidth().border(1.dp, PlaytCardBorder, RoundedCornerShape(16.dp))
-                        ) {
-                            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text("CREATE NEW TOURNAMENT", style = MaterialTheme.typography.titleMedium, color = PlaytCoinGold, fontWeight = FontWeight.Bold)
-                                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Tournament Title") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    OutlinedTextField(value = mode, onValueChange = { mode = it }, label = { Text("Mode (FULL_MAP/CLASH_SQUAD)") }, singleLine = true, modifier = Modifier.weight(1f))
-                                    OutlinedTextField(value = mapName, onValueChange = { mapName = it }, label = { Text("Map") }, singleLine = true, modifier = Modifier.weight(1f))
-                                }
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    OutlinedTextField(value = fee, onValueChange = { fee = it }, label = { Text("Entry Fee") }, singleLine = true, modifier = Modifier.weight(1f))
-                                    OutlinedTextField(value = pool, onValueChange = { pool = it }, label = { Text("Prize Pool") }, singleLine = true, modifier = Modifier.weight(1f))
-                                    OutlinedTextField(value = perKill, onValueChange = { perKill = it }, label = { Text("Per Kill") }, singleLine = true, modifier = Modifier.weight(1f))
-                                }
-                                Button(
-                                    onClick = {
-                                        val newTourney = Tournament(
-                                            title = title,
-                                            gameMode = mode,
-                                            mapName = mapName,
-                                            teamSize = "SOLO",
-                                            entryFee = fee.toLongOrNull() ?: 20L,
-                                            prizePool = pool.toLongOrNull() ?: 800L,
-                                            perKillPrize = perKill.toLongOrNull() ?: 10L,
-                                            booyahPrize = booyah.toLongOrNull() ?: 300L,
-                                            rank2Prize = 150L,
-                                            rank3Prize = 90L,
-                                            totalSlots = if (mode == "CLASH_SQUAD") 8L else 48L,
-                                            filledSlots = 0L,
-                                            startTimeEpochMillis = System.currentTimeMillis() + 30 * 60 * 1000L,
-                                            status = "UPCOMING"
-                                        )
-                                        viewModel.adminCreateNewTournament(newTourney)
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = PlaytVerifiedGreen),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text("PUBLISH TOURNAMENT", fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-                    }
-
-                    // Manage Existing Tournaments (Room ID/Password + Cancel & Auto-Refund)
-                    items(allTourneys, key = { it.id }) { tourney ->
-                        var roomIdText by remember(tourney.roomId) { mutableStateOf(tourney.roomId) }
-                        var roomPassText by remember(tourney.roomPassword) { mutableStateOf(tourney.roomPassword) }
-
-                        Card(
-                            shape = RoundedCornerShape(14.dp),
-                            colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark),
-                            modifier = Modifier.fillMaxWidth().border(1.dp, PlaytCardBorder, RoundedCornerShape(14.dp))
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text("${tourney.title} (${tourney.status})", style = MaterialTheme.typography.titleMedium, color = PlaytTextPrimary, fontWeight = FontWeight.Bold)
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    OutlinedTextField(
-                                        value = roomIdText,
-                                        onValueChange = { roomIdText = it },
-                                        label = { Text("Room ID") },
-                                        singleLine = true,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    OutlinedTextField(
-                                        value = roomPassText,
-                                        onValueChange = { roomPassText = it },
-                                        label = { Text("Password") },
-                                        singleLine = true,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                }
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Button(
-                                        onClick = {
-                                            viewModel.adminPublishRoomCredentials(tourney, roomIdText, roomPassText, "UPCOMING")
-                                        },
-                                        colors = ButtonDefaults.buttonColors(containerColor = PlaytElectricBlue),
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Text("PUBLISH ROOM", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                    }
-                                    Button(
-                                        onClick = {
-                                            viewModel.adminPublishRoomCredentials(tourney, roomIdText, roomPassText, "ONGOING")
-                                        },
-                                        colors = ButtonDefaults.buttonColors(containerColor = PlaytVerifiedGreen),
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Text("START LIVE", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                    }
-                                    Button(
-                                        onClick = { viewModel.adminCancelTournamentWithAutoRefund(tourney) },
-                                        colors = ButtonDefaults.buttonColors(containerColor = PlaytDanger),
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Text("CANCEL & REFUND", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                "RESULTS" -> {
-                    item {
-                        Text("SELECT TOURNAMENT TO SETTLE RESULTS & AUTO-PAYOUT", style = MaterialTheme.typography.labelMedium, color = PlaytCoinGold)
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            allTourneys.forEach { t ->
-                                FilterChip(
-                                    selected = selectedResultTourney?.id == t.id,
-                                    onClick = { selectedResultTourney = t },
-                                    label = { Text(t.title) },
-                                    colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = PlaytCrimson,
-                                        containerColor = PlaytSurfaceElevated
-                                    )
-                                )
-                            }
-                        }
-                    }
-
-                    if (selectedTourneyRegs.isEmpty()) {
-                        item {
-                            Text("No registrations yet for this tournament. Join from the Home tab first to test instant payout settlement.", color = PlaytTextSecondary)
-                        }
-                    } else {
-                        items(selectedTourneyRegs, key = { it.id }) { reg ->
-                            val t = selectedResultTourney ?: return@items
-                            var killsInput by remember(reg.kills) { mutableStateOf(reg.kills.toString()) }
-                            var rankInput by remember(reg.rankAchieved) { mutableStateOf(if (reg.rankAchieved == 0L) "1" else reg.rankAchieved.toString()) }
-
-                            Card(
-                                shape = RoundedCornerShape(14.dp),
-                                colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark),
-                                modifier = Modifier.fillMaxWidth().border(1.dp, PlaytCardBorder, RoundedCornerShape(14.dp))
-                            ) {
-                                Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    Text("Slot #${reg.slotNumber} • ${reg.username} (IGN: ${reg.ffIgn})", style = MaterialTheme.typography.titleMedium, color = PlaytTextPrimary, fontWeight = FontWeight.Bold)
-                                    if (reg.proofText.isNotBlank() || reg.disputeReason.isNotBlank()) {
-                                        Text("Proof: ${reg.proofText} • Dispute: ${reg.disputeReason}", style = MaterialTheme.typography.bodySmall, color = PlaytWarning)
-                                    }
-                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        OutlinedTextField(
-                                            value = killsInput,
-                                            onValueChange = { killsInput = it.filter { ch -> ch.isDigit() } },
-                                            label = { Text("Kills (🪙${t.perKillPrize}/kill)") },
-                                            singleLine = true,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        OutlinedTextField(
-                                            value = rankInput,
-                                            onValueChange = { rankInput = it.filter { ch -> ch.isDigit() } },
-                                            label = { Text("Rank (#1=🪙${t.booyahPrize})") },
-                                            singleLine = true,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        Button(
-                                            onClick = {
-                                                viewModel.adminSettlePlayerResult(
-                                                    tournament = t,
-                                                    registration = reg,
-                                                    kills = killsInput.toLongOrNull() ?: 0L,
-                                                    rank = rankInput.toLongOrNull() ?: 1L
-                                                )
-                                            },
-                                            colors = ButtonDefaults.buttonColors(containerColor = PlaytVerifiedGreen)
-                                        ) {
-                                            Text("PAYOUT", fontWeight = FontWeight.Bold)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                "FINANCE" -> {
-                    item {
+            item {
+                Surface(
+                    color = CrystalGlassSurface,
+                    shape = RoundedCornerShape(26.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, crystalSpecularBorderBrush(PlaytVerifiedGreen)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .background(crystalSurfaceBrush(PlaytVerifiedGreen))
+                            .padding(16.dp)
+                    ) {
                         Text(
-                            text = "MANUAL QR UTR DEPOSIT & WITHDRAWAL APPROVAL QUEUE",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = PlaytCoinGold,
-                            fontWeight = FontWeight.Bold
+                            text = "100% SKILL-BASED ESPORTS TOURNAMENT PLATFORM",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Black,
+                            color = PlaytVerifiedGreen
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "PYBattle hosts competitive Free Fire & Free Fire MAX skill tournaments with fixed, pre-declared prize pools based strictly on in-game rank and eliminations. Zero betting, zero gambling, and zero odds-based wagering.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = PlaytTextPrimary
                         )
                     }
+                }
+            }
 
-                    items(adminTxs, key = { it.id }) { tx ->
-                        Card(
-                            shape = RoundedCornerShape(14.dp),
-                            colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark),
-                            modifier = Modifier.fillMaxWidth().border(1.dp, PlaytCardBorder, RoundedCornerShape(14.dp))
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text("${tx.type} • ${tx.username}", style = MaterialTheme.typography.titleMedium, color = PlaytTextPrimary, fontWeight = FontWeight.Bold)
-                                    Text("🪙 ${tx.amountCoins} (${tx.status})", style = MaterialTheme.typography.titleMedium, color = PlaytCoinGold, fontWeight = FontWeight.Bold)
-                                }
-                                Text(tx.note, style = MaterialTheme.typography.bodySmall, color = PlaytTextSecondary)
-                                Text("UTR / Payout Ref: ${tx.utrNumber} • GST: ₹${tx.gstAmountInr} • TDS: ₹${tx.tdsAmountInr}", style = MaterialTheme.typography.labelSmall, color = PlaytElectricBlue)
-
-                                if (tx.status == "PENDING") {
-                                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                        Button(
-                                            onClick = { viewModel.adminVerifyTransaction(tx, approve = true) },
-                                            colors = ButtonDefaults.buttonColors(containerColor = PlaytVerifiedGreen),
-                                            modifier = Modifier.weight(1f).testTag("admin_approve_tx_${tx.id}")
-                                        ) {
-                                            Text("APPROVE & CREDIT", fontWeight = FontWeight.Bold)
-                                        }
-                                        Button(
-                                            onClick = { viewModel.adminVerifyTransaction(tx, approve = false) },
-                                            colors = ButtonDefaults.buttonColors(containerColor = PlaytDanger),
-                                            modifier = Modifier.weight(1f)
-                                        ) {
-                                            Text("REJECT", fontWeight = FontWeight.Bold)
-                                        }
-                                    }
-                                }
-                            }
-                        }
+            item {
+                Surface(
+                    color = CrystalGlassSurface,
+                    shape = RoundedCornerShape(26.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, crystalSpecularBorderBrush(PlaytCoinGold)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .background(crystalSurfaceBrush(PlaytCoinGold))
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = "STATE GEO-RESTRICTION & 18+ GATE",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Black,
+                            color = PlaytCoinGold
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Paid entry skill contests are restricted for residents of: ${config.blockedStatesCsv}. Players from these states may participate in ₹0 Free Practice Scrims.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = PlaytTextPrimary
+                        )
                     }
                 }
+            }
 
-                "USERS & SUPPORT" -> {
-                    item {
-                        Text("PLAYER KYC, ANTI-CHEAT BAN & WALLET ADJUSTMENTS", style = MaterialTheme.typography.titleMedium, color = PlaytCoinGold, fontWeight = FontWeight.Bold)
-                    }
-                    items(adminUsers, key = { it.userId }) { u ->
-                        Card(
-                            shape = RoundedCornerShape(14.dp),
-                            colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark),
-                            modifier = Modifier.fillMaxWidth().border(1.dp, PlaytCardBorder, RoundedCornerShape(14.dp))
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Text("${u.username} (FF UID: ${u.ffUid}) • State: ${u.stateName}", style = MaterialTheme.typography.titleMedium, color = PlaytTextPrimary, fontWeight = FontWeight.Bold)
-                                Text("Wallet: Dep 🪙${u.depositedCoins} | Win 🪙${u.winningCoins} | Bonus 🪙${u.bonusCoins} | KYC: ${u.kycStatus}", style = MaterialTheme.typography.bodySmall, color = PlaytTextSecondary)
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Button(
-                                        onClick = {
-                                            viewModel.adminManageUser(
-                                                targetUser = u,
-                                                newKycStatus = "VERIFIED",
-                                                newBannedState = u.isBanned,
-                                                depDelta = 50L,
-                                                winDelta = 0L,
-                                                bonusDelta = 10L,
-                                                reason = "Admin Promotional Grant +50 Dep / +10 Bonus"
-                                            )
-                                        },
-                                        colors = ButtonDefaults.buttonColors(containerColor = PlaytVerifiedGreen),
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Text("+60 COINS & VERIFY", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                    }
-                                    Button(
-                                        onClick = {
-                                            viewModel.adminManageUser(
-                                                targetUser = u,
-                                                newKycStatus = u.kycStatus,
-                                                newBannedState = !u.isBanned,
-                                                depDelta = 0L,
-                                                winDelta = 0L,
-                                                bonusDelta = 0L,
-                                                reason = if (!u.isBanned) "Anti-Cheat Ban" else "Unbanned by Admin"
-                                            )
-                                        },
-                                        colors = ButtonDefaults.buttonColors(containerColor = if (u.isBanned) PlaytElectricBlue else PlaytDanger),
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Text(if (u.isBanned) "UNBAN PLAYER" else "BAN CHEATER", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    item {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("PLAYER SUPPORT TICKETS (${adminTickets.size})", style = MaterialTheme.typography.titleMedium, color = PlaytCoinGold, fontWeight = FontWeight.Bold)
-                    }
-
-                    items(adminTickets, key = { it.id }) { tkt ->
-                        var replyText by remember(tkt.adminReply) { mutableStateOf(tkt.adminReply) }
-                        Card(
-                            shape = RoundedCornerShape(14.dp),
-                            colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark),
-                            modifier = Modifier.fillMaxWidth().border(1.dp, PlaytCardBorder, RoundedCornerShape(14.dp))
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Text("[${tkt.category}] ${tkt.subject} (${tkt.status})", style = MaterialTheme.typography.titleMedium, color = PlaytTextPrimary, fontWeight = FontWeight.Bold)
-                                Text("From ${tkt.username}: ${tkt.message}", style = MaterialTheme.typography.bodySmall, color = PlaytTextSecondary)
-                                OutlinedTextField(
-                                    value = replyText,
-                                    onValueChange = { replyText = it },
-                                    label = { Text("Admin Resolution Reply") },
-                                    singleLine = true,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                                Button(
-                                    onClick = {
-                                        viewModel.adminReplyToTicket(tkt, replyText.ifBlank { "Issue verified & resolved by PYBattle Support." }, "RESOLVED")
-                                    },
-                                    colors = ButtonDefaults.buttonColors(containerColor = PlaytCrimson),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text("SEND REPLY & MARK RESOLVED", fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
+            item {
+                Surface(
+                    color = CrystalGlassSurface,
+                    shape = RoundedCornerShape(26.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, crystalSpecularBorderBrush(CrystalAuroraBlue)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .background(crystalSurfaceBrush(CrystalAuroraBlue))
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = "GRIEVANCE REDRESSAL OFFICER (INDIA IT RULES)",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Black,
+                            color = CrystalAuroraBlue
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Officer Name: PYBattle Grievance Redressal Officer\n" +
+                                "Official Email: grievance@pybattle.in\n" +
+                                "Support Desk: support@pybattle.in\n" +
+                                "Resolution SLA: Acknowledged within 24 hours; resolved within 15 business days.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = PlaytTextPrimary
+                        )
                     }
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun MetricPill(label: String, value: String, color: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, style = MaterialTheme.typography.titleLarge, color = color, fontWeight = FontWeight.ExtraBold)
-        Text(label, style = MaterialTheme.typography.labelSmall, color = PlaytTextSecondary)
     }
 }

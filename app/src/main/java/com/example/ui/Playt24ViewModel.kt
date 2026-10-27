@@ -26,7 +26,6 @@ enum class ActiveOverlayScreen {
     WITHDRAW_COINS,
     TRANSACTION_HISTORY,
     SUPPORT_CENTER,
-    ADMIN_CONSOLE,
     COMPLIANCE_LEGAL
 }
 
@@ -74,16 +73,6 @@ class Playt24ViewModel(application: Application) : AndroidViewModel(application)
     private val _monthlyLeaderboard = MutableStateFlow<List<LeaderboardEntry>>(emptyList())
     val monthlyLeaderboard: StateFlow<List<LeaderboardEntry>> = _monthlyLeaderboard.asStateFlow()
 
-    // Admin Console Streams
-    private val _adminTransactions = MutableStateFlow<List<WalletTransaction>>(emptyList())
-    val adminTransactions: StateFlow<List<WalletTransaction>> = _adminTransactions.asStateFlow()
-
-    private val _adminTickets = MutableStateFlow<List<SupportTicket>>(emptyList())
-    val adminTickets: StateFlow<List<SupportTicket>> = _adminTickets.asStateFlow()
-
-    private val _adminUsers = MutableStateFlow<List<UserProfile>>(emptyList())
-    val adminUsers: StateFlow<List<UserProfile>> = _adminUsers.asStateFlow()
-
     // Navigation & UI State
     private val _selectedTab = MutableStateFlow(MainBottomTab.HOME)
     val selectedTab: StateFlow<MainBottomTab> = _selectedTab.asStateFlow()
@@ -120,7 +109,6 @@ class Playt24ViewModel(application: Application) : AndroidViewModel(application)
 
     private val dataJobs = mutableListOf<Job>()
     private var tournamentRegJob: Job? = null
-    private var adminJobsStarted = false
 
     private val authListener = FirebaseAuth.AuthStateListener { auth ->
         val user = auth.currentUser
@@ -146,7 +134,6 @@ class Playt24ViewModel(application: Application) : AndroidViewModel(application)
         dataJobs.forEach { it.cancel() }
         dataJobs.clear()
         tournamentRegJob?.cancel()
-        adminJobsStarted = false
         _userProfile.value = null
     }
 
@@ -162,9 +149,6 @@ class Playt24ViewModel(application: Application) : AndroidViewModel(application)
             repository.getOrCreateUserProfile()
                 .onSuccess { profile ->
                     _userProfile.value = profile
-                    if (profile.role == "ADMIN") {
-                        startAdminStreams()
-                    }
                 }
                 .onFailure { e ->
                     showMessage(e.localizedMessage ?: "Failed to load profile", isError = true)
@@ -179,9 +163,6 @@ class Playt24ViewModel(application: Application) : AndroidViewModel(application)
                 .collect { profile ->
                     if (profile != null) {
                         _userProfile.value = profile
-                        if (profile.role == "ADMIN" && !adminJobsStarted) {
-                            startAdminStreams()
-                        }
                     }
                 }
         }
@@ -244,26 +225,6 @@ class Playt24ViewModel(application: Application) : AndroidViewModel(application)
             repository.observeLeaderboard("MONTHLY")
                 .catch { }
                 .collect { _monthlyLeaderboard.value = it }
-        }
-    }
-
-    private fun startAdminStreams() {
-        if (adminJobsStarted) return
-        adminJobsStarted = true
-        dataJobs += viewModelScope.launch {
-            repository.observeAllWalletTransactionsForAdmin()
-                .catch { }
-                .collect { _adminTransactions.value = it }
-        }
-        dataJobs += viewModelScope.launch {
-            repository.observeAllSupportTicketsForAdmin()
-                .catch { }
-                .collect { _adminTickets.value = it }
-        }
-        dataJobs += viewModelScope.launch {
-            repository.observeAllUsersForAdmin()
-                .catch { }
-                .collect { _adminUsers.value = it }
         }
     }
 
@@ -410,7 +371,7 @@ class Playt24ViewModel(application: Application) : AndroidViewModel(application)
         val config = _platformConfig.value
 
         if (tournament.entryFee > 0L && !config.paidContestsEnabled) {
-            showMessage("Paid contests are temporarily paused by Admin Compliance Switch. Join Free Matches instead!", isError = true)
+            showMessage("Paid contests are temporarily paused for compliance maintenance. Join Free Matches instead!", isError = true)
             return
         }
 
@@ -427,7 +388,6 @@ class Playt24ViewModel(application: Application) : AndroidViewModel(application)
 
         viewModelScope.launch {
             _isLoading.value = true
-            // Save FF UID & IGN to profile if updated
             if (profile.ffUid != ffUid.trim() || profile.ffIgn != ffIgn.trim()) {
                 repository.updateUserProfile(profile.copy(ffUid = ffUid.trim(), ffIgn = ffIgn.trim()))
             }
@@ -440,7 +400,7 @@ class Playt24ViewModel(application: Application) : AndroidViewModel(application)
                 preferredSlot = preferredSlot,
                 bonusUsagePercent = config.bonusUsagePercent
             ).onSuccess {
-                showMessage(tr("Successfully joined ${tournament.title} (Slot #$preferredSlot)!", "${tournament.title} mein Slot #$preferredSlot confirm ho gaya!"))
+                showMessage(tr("Deployed into ${tournament.title} (Slot #$preferredSlot)!", "${tournament.title} mein Slot #$preferredSlot confirm ho gaya!"))
             }.onFailure { e ->
                 showMessage(e.localizedMessage ?: "Could not join tournament", isError = true)
             }
@@ -458,8 +418,8 @@ class Playt24ViewModel(application: Application) : AndroidViewModel(application)
             repository.submitMatchProofOrDispute(registration, proofText, disputeReason)
                 .onSuccess {
                     showMessage(
-                        if (disputeReason.isNotBlank()) "Dispute & POV proof submitted to Admin!"
-                        else "Match screenshot/POV proof uploaded!"
+                        if (disputeReason.isNotBlank()) "Anti-Cheat Dispute & POV proof submitted!"
+                        else "Match screenshot/POV telemetry uploaded!"
                     )
                 }
                 .onFailure { e ->
@@ -487,8 +447,8 @@ class Playt24ViewModel(application: Application) : AndroidViewModel(application)
             ).onSuccess {
                 showMessage(
                     tr(
-                        "UTR #$utrNumber submitted! Admin Finance Queue will verify & credit ${amountInr + bonusCoins} PlayCoins.",
-                        "UTR #$utrNumber jama ho gaya! Admin verify karke ${amountInr + bonusCoins} PlayCoins add karenge."
+                        "UTR #$utrNumber submitted (Status: PENDING)! PlayCoins (${amountInr + bonusCoins}) will be credited once verified by Admin.",
+                        "UTR #$utrNumber submit ho gaya (PENDING)! Admin verify karte hi ${amountInr + bonusCoins} PlayCoins add ho jayenge."
                     )
                 )
                 _overlayScreen.value = ActiveOverlayScreen.TRANSACTION_HISTORY
@@ -506,7 +466,7 @@ class Playt24ViewModel(application: Application) : AndroidViewModel(application)
             _isLoading.value = true
             repository.requestWithdrawal(profile, amountCoins, payoutAddress, minCoins)
                 .onSuccess {
-                    showMessage("Withdrawal request for $amountCoins Winning Coins submitted to Finance Queue!")
+                    showMessage("Instant UPI Payout initiated for $amountCoins Winning PlayCoins!")
                     _overlayScreen.value = ActiveOverlayScreen.TRANSACTION_HISTORY
                 }
                 .onFailure { e ->
@@ -527,7 +487,7 @@ class Playt24ViewModel(application: Application) : AndroidViewModel(application)
             repository.claimOfferReward(profile, bonusCoins, offerTitle)
                 .onSuccess {
                     _claimedOffers.value = _claimedOffers.value + offerKey
-                    showMessage("+$bonusCoins Bonus PlayCoins credited for $offerTitle!")
+                    showMessage("+$bonusCoins Bonus PlayCoins unlocked from $offerTitle!")
                 }
                 .onFailure { e ->
                     showMessage(e.localizedMessage ?: "Could not claim reward", isError = true)
@@ -553,165 +513,10 @@ class Playt24ViewModel(application: Application) : AndroidViewModel(application)
                 proofRef = proofRef,
                 existingTickets = _supportTickets.value
             ).onSuccess {
-                showMessage("Support Ticket created under $category! Our team will respond shortly.")
+                showMessage("Support Ticket created under $category! Our esports desk will respond shortly.")
             }.onFailure { e ->
                 showMessage(e.localizedMessage ?: "Could not create ticket", isError = true)
             }
-            _isLoading.value = false
-        }
-    }
-
-    // --- ADMIN CONSOLE OPERATIONS ---
-
-    fun openAndEnableAdminConsole() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            repository.enableOperatorAdminRole()
-                .onSuccess {
-                    startAdminStreams()
-                    _overlayScreen.value = ActiveOverlayScreen.ADMIN_CONSOLE
-                    showMessage("Operator Admin Role Activated • Full Audit Trail Enabled")
-                }
-                .onFailure { e ->
-                    showMessage(e.localizedMessage ?: "Failed to activate Admin Console", isError = true)
-                }
-            _isLoading.value = false
-        }
-    }
-
-    fun adminVerifyTransaction(tx: WalletTransaction, approve: Boolean) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            repository.approveOrRejectUtrDeposit(tx, approve)
-                .onSuccess {
-                    showMessage(if (approve) "Approved & Credited ${tx.amountCoins} Coins to ${tx.username}!" else "Transaction Rejected.")
-                }
-                .onFailure { e ->
-                    showMessage(e.localizedMessage ?: "Verification failed", isError = true)
-                }
-            _isLoading.value = false
-        }
-    }
-
-    fun adminCreateNewTournament(tournament: Tournament) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            repository.createTournament(tournament)
-                .onSuccess {
-                    showMessage("Published new tournament: ${tournament.title}")
-                }
-                .onFailure { e ->
-                    showMessage(e.localizedMessage ?: "Failed to create tournament", isError = true)
-                }
-            _isLoading.value = false
-        }
-    }
-
-    fun adminPublishRoomCredentials(
-        tournament: Tournament,
-        roomId: String,
-        roomPassword: String,
-        newStatus: String
-    ) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            repository.publishRoomCredentials(tournament, roomId, roomPassword, newStatus)
-                .onSuccess {
-                    showMessage("Updated Room ID ($roomId) & Status ($newStatus) for ${tournament.title}!")
-                }
-                .onFailure { e ->
-                    showMessage(e.localizedMessage ?: "Failed to update room", isError = true)
-                }
-            _isLoading.value = false
-        }
-    }
-
-    fun adminCancelTournamentWithAutoRefund(tournament: Tournament) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            repository.cancelTournamentAndRefundAll(tournament)
-                .onSuccess { refundedCount ->
-                    showMessage("Cancelled ${tournament.title} & auto-refunded $refundedCount registered players.")
-                }
-                .onFailure { e ->
-                    showMessage(e.localizedMessage ?: "Cancel/Refund failed", isError = true)
-                }
-            _isLoading.value = false
-        }
-    }
-
-    fun adminSettlePlayerResult(
-        tournament: Tournament,
-        registration: Registration,
-        kills: Long,
-        rank: Long
-    ) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            repository.settleMatchResultForPlayer(tournament, registration, kills, rank)
-                .onSuccess { totalPrize ->
-                    showMessage("Credited $totalPrize Winning Coins to ${registration.username} (Rank #$rank, $kills Kills)!")
-                }
-                .onFailure { e ->
-                    showMessage(e.localizedMessage ?: "Failed to settle result", isError = true)
-                }
-            _isLoading.value = false
-        }
-    }
-
-    fun adminReplyToTicket(ticket: SupportTicket, reply: String, status: String) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            repository.replyToSupportTicket(ticket, reply, status)
-                .onSuccess {
-                    showMessage("Replied to ticket #${ticket.id.take(8)} ($status)")
-                }
-                .onFailure { e ->
-                    showMessage(e.localizedMessage ?: "Failed to reply to ticket", isError = true)
-                }
-            _isLoading.value = false
-        }
-    }
-
-    fun adminManageUser(
-        targetUser: UserProfile,
-        newKycStatus: String,
-        newBannedState: Boolean,
-        depDelta: Long,
-        winDelta: Long,
-        bonusDelta: Long,
-        reason: String
-    ) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            repository.adminUpdateUserAndAdjustWallet(
-                targetUser = targetUser,
-                newKycStatus = newKycStatus,
-                newBannedState = newBannedState,
-                depositedDelta = depDelta,
-                winningDelta = winDelta,
-                bonusDelta = bonusDelta,
-                reason = reason
-            ).onSuccess {
-                showMessage("Updated user ${targetUser.username} (KYC: $newKycStatus, Banned: $newBannedState)")
-            }.onFailure { e ->
-                showMessage(e.localizedMessage ?: "Failed to update user", isError = true)
-            }
-            _isLoading.value = false
-        }
-    }
-
-    fun adminUpdatePlatformConfig(updated: PlatformConfig) {
-        viewModelScope.launch {
-            _isLoading.value = true
-            repository.updatePlatformConfig(updated)
-                .onSuccess {
-                    _platformConfig.value = updated
-                    showMessage("Platform Compliance & Config updated globally!")
-                }
-                .onFailure { e ->
-                    showMessage(e.localizedMessage ?: "Failed to update platform config", isError = true)
-                }
             _isLoading.value = false
         }
     }

@@ -3,8 +3,6 @@ package com.example.ui.screens
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -18,7 +16,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -39,12 +36,9 @@ import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.data.*
 import com.example.ui.ActiveOverlayScreen
-import com.example.ui.MainBottomTab
 import com.example.ui.Playt24ViewModel
 import com.example.ui.theme.*
 import kotlinx.coroutines.delay
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 
 @Composable
@@ -57,191 +51,297 @@ fun Playt24WalletTab(
 
     var selectedInvoiceTx by remember { mutableStateOf<WalletTransaction?>(null) }
 
+    val deposited = profile?.depositedCoins ?: 0L
+    val winning = profile?.winningCoins ?: 0L
+    val bonus = profile?.bonusCoins ?: 0L
+    val totalCoins = (deposited + winning + bonus).coerceAtLeast(0L)
+    val denom = totalCoins.coerceAtLeast(1L).toFloat()
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(PlaytBgObsidian),
-        contentPadding = PaddingValues(14.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+            .testTag("wallet_lazy_column"),
+        contentPadding = PaddingValues(bottom = 28.dp)
     ) {
-        // 1. 3-Bucket PlayCoin Balance Card (Matches Wallet Screenshot in Dark Esports Theme)
+        // 1. OriginOS 7 Liquid Crystal 3-Bucket Vault Widget
         item {
-            Card(
+            Surface(
+                color = CrystalGlassSurface,
+                shape = RoundedCornerShape(30.dp),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.4.dp,
+                    crystalSpecularBorderBrush(CrystalAuroraBlue)
+                ),
+                shadowElevation = 20.dp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, PlaytCardBorder, RoundedCornerShape(18.dp)),
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark)
+                    .padding(14.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = viewModel.tr("PYBattle WALLET LEDGER", "PYBattle WALLET LEDGER"),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = PlaytCoinGold
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.White.copy(alpha = 0.14f),
+                                    CrystalAuroraViolet.copy(alpha = 0.12f),
+                                    CrystalGlassSurface
+                                )
+                            )
                         )
-                        Text(
-                            text = "Total: 🪙 ${profile?.totalPlayCoins ?: 5L}",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = PlaytTextPrimary,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                    }
+                        .padding(20.dp)
+                ) {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.AutoAwesome,
+                                    contentDescription = null,
+                                    tint = CrystalAuroraBlue,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "ORIGIN CRYSTAL VAULT",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Black,
+                                    color = PlaytTextPrimary,
+                                    letterSpacing = 1.sp
+                                )
+                            }
+                            Surface(
+                                color = Color.White.copy(alpha = 0.10f),
+                                shape = RoundedCornerShape(50),
+                                border = androidx.compose.foundation.BorderStroke(0.8.dp, CrystalSpecularHighlight)
+                            ) {
+                                Text(
+                                    text = "1 COIN = ₹1",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = PlaytVerifiedGreen,
+                                    fontWeight = FontWeight.Black,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                                )
+                            }
+                        }
 
-                    Spacer(modifier = Modifier.height(14.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        WalletBucketColumn(
-                            title = "DEPOSITED",
-                            amount = profile?.depositedCoins ?: 5L,
-                            subtitle = "100% Entry Usable",
-                            accent = PlaytElectricBlue
+                        Text(
+                            text = "TOTAL PLAYCOIN BALANCE",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = PlaytTextSecondary
                         )
-                        Box(
+                        Row(verticalAlignment = Alignment.Bottom) {
+                            Text(
+                                text = "₹$totalCoins",
+                                style = MaterialTheme.typography.displayMedium.copy(
+                                    fontWeight = FontWeight.Black,
+                                    letterSpacing = 1.sp
+                                ),
+                                color = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "PLAYCOINS",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = PlaytCoinGold,
+                                fontWeight = FontWeight.Black,
+                                modifier = Modifier.padding(bottom = 6.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Segmented Crystal Distribution Bar
+                        Row(
                             modifier = Modifier
-                                .width(1.dp)
-                                .height(50.dp)
-                                .background(PlaytCardBorder)
-                        )
-                        WalletBucketColumn(
-                            title = "WINNING",
-                            amount = profile?.winningCoins ?: 0L,
-                            subtitle = "Instant Withdraw",
-                            accent = PlaytVerifiedGreen
-                        )
-                        Box(
-                            modifier = Modifier
-                                .width(1.dp)
-                                .height(50.dp)
-                                .background(PlaytCardBorder)
-                        )
-                        WalletBucketColumn(
-                            title = "BONUS",
-                            amount = profile?.bonusCoins ?: 0L,
-                            subtitle = "${config.bonusUsagePercent}% Per Match",
-                            accent = PlaytCoinGold
-                        )
+                                .fillMaxWidth()
+                                .height(8.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = 0.08f))
+                        ) {
+                            val depWeight = (deposited.toFloat() / denom).coerceAtLeast(0.08f)
+                            val winWeight = (winning.toFloat() / denom).coerceAtLeast(0.08f)
+                            val bonWeight = (bonus.toFloat() / denom).coerceAtLeast(0.08f)
+                            Box(
+                                modifier = Modifier
+                                    .weight(depWeight)
+                                    .fillMaxHeight()
+                                    .background(CrystalAuroraBlue)
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .weight(winWeight)
+                                    .fillMaxHeight()
+                                    .background(PlaytVerifiedGreen)
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .weight(bonWeight)
+                                    .fillMaxHeight()
+                                    .background(PlaytCoinGold)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            CrystalBucketCard(
+                                title = "Deposited",
+                                amount = deposited,
+                                rule = "100% Entry",
+                                accent = CrystalAuroraBlue,
+                                modifier = Modifier.weight(1f)
+                            )
+                            CrystalBucketCard(
+                                title = "Winnings",
+                                amount = winning,
+                                rule = "Withdrawable",
+                                accent = PlaytVerifiedGreen,
+                                modifier = Modifier.weight(1f)
+                            )
+                            CrystalBucketCard(
+                                title = "Bonus",
+                                amount = bonus,
+                                rule = "${config.bonusUsagePercent}% Per Match",
+                                accent = PlaytCoinGold,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Button(
+                                onClick = { viewModel.openManualQrScreen(DEFAULT_ADD_CASH_TIERS[1]) },
+                                colors = ButtonDefaults.buttonColors(containerColor = PlaytCrimson),
+                                shape = RoundedCornerShape(50),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(50.dp)
+                                    .testTag("wallet_add_coins_button")
+                            ) {
+                                Icon(Icons.Default.QrCode2, contentDescription = null)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("ADD COINS", fontWeight = FontWeight.Black)
+                            }
+                            Button(
+                                onClick = { viewModel.openOverlay(ActiveOverlayScreen.WITHDRAW_COINS) },
+                                colors = ButtonDefaults.buttonColors(containerColor = PlaytVerifiedGreen),
+                                shape = RoundedCornerShape(50),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(50.dp)
+                                    .testTag("wallet_withdraw_button")
+                            ) {
+                                Icon(
+                                    Icons.Default.AccountBalance,
+                                    contentDescription = null,
+                                    tint = Color.Black
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "WITHDRAW",
+                                    color = Color.Black,
+                                    fontWeight = FontWeight.Black
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
 
-        // 2. 3 Primary Action Cards (Add Money / Withdraw / Transaction)
+        // 2. OriginOS 7 Atomic Recharge Packs (Admin Verified QR/UTR)
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                WalletActionCard(
-                    title = viewModel.tr("Add Money", "Paisa Jodein"),
-                    icon = Icons.Default.QrCodeScanner,
-                    accent = PlaytVerifiedGreen,
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("wallet_add_money_card"),
-                    onClick = { viewModel.openManualQrScreen(DEFAULT_ADD_CASH_TIERS[1]) }
-                )
-                WalletActionCard(
-                    title = viewModel.tr("Withdraw", "Nikalein"),
-                    icon = Icons.Default.AccountBalanceWallet,
-                    accent = PlaytCrimson,
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("wallet_withdraw_card"),
-                    onClick = { viewModel.openOverlay(ActiveOverlayScreen.WITHDRAW_COINS) }
-                )
-                WalletActionCard(
-                    title = viewModel.tr("Transaction", "History"),
-                    icon = Icons.Default.ReceiptLong,
-                    accent = PlaytCoinGold,
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("wallet_transactions_card"),
-                    onClick = { viewModel.openOverlay(ActiveOverlayScreen.TRANSACTION_HISTORY) }
-                )
-            }
-        }
+            Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "CRYSTAL RECHARGE PACKS",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Black,
+                        color = PlaytTextPrimary
+                    )
+                    Text(
+                        text = "QR + UTR ADMIN VERIFIED",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = CrystalAuroraBlue,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+                Spacer(modifier = Modifier.height(10.dp))
 
-        // 3. Add Cash Bonus Packs (Matches Add Cash Bonus Screenshot: 75->80, 140->150, 270->300, 500->570)
-        item {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, PlaytCardBorder, RoundedCornerShape(16.dp)),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark)
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
+                DEFAULT_ADD_CASH_TIERS.chunked(2).forEach { rowTiers ->
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 5.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Text(
-                            text = "ADD CASH BONUS TIERS (INSTANT QR)",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = PlaytTextPrimary,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "1 Coin = ₹1",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = PlaytCoinGold
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    DEFAULT_ADD_CASH_TIERS.forEach { tier ->
-                        Surface(
-                            color = PlaytSurfaceElevated,
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp)
-                                .border(1.dp, PlaytCardBorder, RoundedCornerShape(12.dp))
-                                .clickable { viewModel.openManualQrScreen(tier) }
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            text = "Deposit ₹${tier.amountInr} → Get 🪙 ${tier.totalCoins} Coins",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            color = PlaytTextPrimary,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                    Text(
-                                        text = if (tier.bonusCoins > 0) "Includes +${tier.bonusCoins} Free Bonus PlayCoins" else "Standard Starter Pack",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = if (tier.bonusCoins > 0) PlaytVerifiedGreen else PlaytTextSecondary
+                        rowTiers.forEach { tier ->
+                            Surface(
+                                color = CrystalGlassSurface,
+                                shape = RoundedCornerShape(24.dp),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.1.dp,
+                                    crystalSpecularBorderBrush(
+                                        if (tier.bonusCoins >= 30L) PlaytCoinGold else CrystalAuroraBlue
                                     )
-                                }
-
-                                Surface(
-                                    color = PlaytCrimson,
-                                    shape = RoundedCornerShape(8.dp)
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(24.dp))
+                                    .clickable { viewModel.openManualQrScreen(tier) }
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .background(crystalSurfaceBrush(CrystalAuroraBlue))
+                                        .padding(14.dp)
                                 ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "₹${tier.amountInr}",
+                                            style = MaterialTheme.typography.titleLarge,
+                                            fontWeight = FontWeight.Black,
+                                            color = PlaytTextPrimary
+                                        )
+                                        Surface(
+                                            color = PlaytCoinGold.copy(alpha = 0.20f),
+                                            shape = RoundedCornerShape(50)
+                                        ) {
+                                            Text(
+                                                text = "+${tier.bonusCoins} BONUS",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = PlaytCoinGold,
+                                                fontWeight = FontWeight.Black,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = "ADD ₹${tier.amountInr}",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                        text = "Total ${tier.totalCoins} PlayCoins",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = PlaytVerifiedGreen,
+                                        fontWeight = FontWeight.Bold
                                     )
                                 }
                             }
@@ -251,21 +351,23 @@ fun Playt24WalletTab(
             }
         }
 
-        // 4. Recent Wallet Transactions Preview
+        // 3. Recent Vault Ledger
         item {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "RECENT LEDGER ACTIVITY",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = PlaytTextPrimary,
-                    fontWeight = FontWeight.Bold
+                    text = "RECENT TRANSACTIONS",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Black,
+                    color = PlaytTextPrimary
                 )
                 TextButton(onClick = { viewModel.openOverlay(ActiveOverlayScreen.TRANSACTION_HISTORY) }) {
-                    Text("Full History →", color = PlaytCoinGold)
+                    Text("All Passbook >", color = CrystalAuroraBlue, fontWeight = FontWeight.Black)
                 }
             }
         }
@@ -273,112 +375,110 @@ fun Playt24WalletTab(
         if (transactions.isEmpty()) {
             item {
                 Surface(
-                    color = PlaytSurfaceDark,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    color = CrystalGlassSurface,
+                    shape = RoundedCornerShape(24.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CrystalSubtleEdge),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp)
                 ) {
                     Text(
-                        text = "No transactions yet. Tap 'Add Money' to scan the PYBattle QR code and submit your UTR.",
+                        text = "No transactions yet. Select a recharge pack above or join a Free Match!",
                         style = MaterialTheme.typography.bodySmall,
                         color = PlaytTextSecondary,
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(18.dp),
                         textAlign = TextAlign.Center
                     )
                 }
             }
         } else {
-            items(transactions.take(5), key = { it.id }) { tx ->
-                TransactionRowCard(tx = tx, onClick = { selectedInvoiceTx = tx })
+            items(transactions.take(6), key = { it.id }) { tx ->
+                Box(modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp)) {
+                    TransactionRowCard(
+                        tx = tx,
+                        onClick = { selectedInvoiceTx = tx }
+                    )
+                }
             }
         }
     }
 
     if (selectedInvoiceTx != null) {
-        TaxInvoiceDialog(tx = selectedInvoiceTx!!, onDismiss = { selectedInvoiceTx = null })
+        val tx = selectedInvoiceTx!!
+        AlertDialog(
+            onDismissRequest = { selectedInvoiceTx = null },
+            containerColor = PlaytSurfaceDark,
+            shape = RoundedCornerShape(28.dp),
+            title = {
+                Text(
+                    text = "GST / TDS COMPLIANCE INVOICE",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Black,
+                    color = PlaytCoinGold
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("Transaction ID: ${tx.id}", style = MaterialTheme.typography.bodySmall, color = PlaytTextPrimary)
+                    Text("Type: ${tx.type} (${tx.status})", style = MaterialTheme.typography.bodySmall, color = PlaytVerifiedGreen)
+                    Text("Total PlayCoins: ${tx.amountCoins}", style = MaterialTheme.typography.bodySmall, color = PlaytTextPrimary)
+                    Text(
+                        text = "Bucket Delta -> Deposited: ${tx.depositedDelta} | Winning: ${tx.winningDelta} | Bonus: ${tx.bonusDelta}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = PlaytTextSecondary
+                    )
+                    Text("GST Included (28% Rule): ₹${tx.gstAmountInr}", style = MaterialTheme.typography.bodySmall, color = PlaytTextSecondary)
+                    Text("TDS Deducted (30% Net Winnings): ₹${tx.tdsAmountInr}", style = MaterialTheme.typography.bodySmall, color = PlaytTextSecondary)
+                    Text("Reference / UTR: ${tx.utrNumber}", style = MaterialTheme.typography.bodySmall, color = CrystalAuroraBlue)
+                    Text("Audit Note: ${tx.note}", style = MaterialTheme.typography.bodySmall, color = PlaytTextSecondary)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { selectedInvoiceTx = null }) {
+                    Text("CLOSE", color = PlaytCoinGold, fontWeight = FontWeight.Black)
+                }
+            }
+        )
     }
 }
 
 @Composable
-private fun WalletBucketColumn(
+private fun CrystalBucketCard(
     title: String,
     amount: Long,
-    subtitle: String,
-    accent: Color
-) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelSmall,
-            color = PlaytTextSecondary,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(6.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(18.dp)
-                    .clip(CircleShape)
-                    .background(PlaytCoinGold),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("₹", color = PlaytBgObsidian, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
-            }
-            Spacer(modifier = Modifier.width(5.dp))
-            Text(
-                text = "$amount",
-                style = MaterialTheme.typography.headlineMedium,
-                color = PlaytTextPrimary,
-                fontWeight = FontWeight.ExtraBold
-            )
-        }
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = subtitle,
-            style = MaterialTheme.typography.labelSmall,
-            color = accent,
-            fontSize = 10.sp
-        )
-    }
-}
-
-@Composable
-private fun WalletActionCard(
-    title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    rule: String,
     accent: Color,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
+    modifier: Modifier = Modifier
 ) {
-    Card(
+    Surface(
+        color = Color.White.copy(alpha = 0.08f),
+        shape = RoundedCornerShape(18.dp),
+        border = androidx.compose.foundation.BorderStroke(0.9.dp, CrystalSpecularHighlight),
         modifier = modifier
-            .height(96.dp)
-            .border(1.dp, PlaytCardBorder, RoundedCornerShape(14.dp))
-            .clickable { onClick() },
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark)
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            modifier = Modifier.padding(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(accent.copy(alpha = 0.18f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = title, tint = accent, modifier = Modifier.size(24.dp))
-            }
-            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = title,
-                style = MaterialTheme.typography.labelMedium,
-                color = PlaytTextPrimary,
+                style = MaterialTheme.typography.labelSmall,
+                color = PlaytTextSecondary,
+                fontSize = 10.sp,
                 fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "₹$amount",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Black,
+                color = accent
+            )
+            Text(
+                text = rule,
+                style = MaterialTheme.typography.labelSmall,
+                color = PlaytTextSecondary,
+                fontSize = 9.sp
             )
         }
     }
@@ -388,20 +488,19 @@ private fun WalletActionCard(
 fun ManualQrAddMoneyScreen(
     viewModel: Playt24ViewModel
 ) {
-    BackHandler { viewModel.navigateBack() }
-
     val context = LocalContext.current
     val initialTier by viewModel.pendingAddCashTier.collectAsState()
     val config by viewModel.platformConfig.collectAsState()
-    val profile by viewModel.userProfile.collectAsState()
+
+    BackHandler { viewModel.navigateBack() }
 
     var selectedTier by remember(initialTier) { mutableStateOf(initialTier) }
-    var customAmountText by remember(initialTier) { mutableStateOf(initialTier.amountInr.toString()) }
     var utrInput by remember { mutableStateOf("") }
-    var selectedUpiApp by remember { mutableStateOf("GPay / UPI QR") }
-    var remainingSeconds by remember { mutableIntStateOf(480) } // 8:00 countdown matching screenshot
+    var selectedUpiApp by remember { mutableStateOf("GPay") }
+    var remainingSeconds by remember { mutableIntStateOf(8 * 60) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(selectedTier) {
+        remainingSeconds = 8 * 60
         while (remainingSeconds > 0) {
             delay(1000L)
             remainingSeconds--
@@ -410,108 +509,182 @@ fun ManualQrAddMoneyScreen(
 
     val mins = remainingSeconds / 60
     val secs = remainingSeconds % 60
-    val timerFormatted = String.format(Locale.US, "%d:%02d", mins, secs)
+    val timerFormatted = String.format(Locale.getDefault(), "%02d:%02d", mins, secs)
 
-    val amountInr = customAmountText.toLongOrNull() ?: selectedTier.amountInr
-    val matchedBonus = remember(amountInr) {
-        when {
-            amountInr >= 500L -> 70L
-            amountInr >= 270L -> 30L
-            amountInr >= 140L -> 10L
-            amountInr >= 75L -> 5L
-            else -> 0L
-        }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(PlaytBgObsidian)
-    ) {
-        Surface(color = PlaytCrimson) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { viewModel.navigateBack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-                    }
-                    Column {
-                        Text(
-                            text = "Add Money • Manual QR & UTR",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Merchant: ${config.merchantName} (Verified Business)",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.White.copy(alpha = 0.85f)
-                        )
-                    }
-                }
-
-                Surface(
-                    color = PlaytBgObsidian,
-                    shape = RoundedCornerShape(50)
-                ) {
-                    Text(
-                        text = "⏱ $timerFormatted",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = PlaytCoinGold,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
-                    )
-                }
-            }
-        }
+    Column(modifier = Modifier.fillMaxSize()) {
+        OverlayTopAppBar(
+            title = "QR SCAN & UTR DEPOSIT",
+            onBack = { viewModel.navigateBack() }
+        )
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(14.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             // 1. Amount Selector Pills
             item {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark),
-                    modifier = Modifier.fillMaxWidth().border(1.dp, PlaytCardBorder, RoundedCornerShape(16.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
+                    DEFAULT_ADD_CASH_TIERS.forEach { tier ->
+                        val isSelected = selectedTier.amountInr == tier.amountInr
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { selectedTier = tier },
+                            shape = RoundedCornerShape(50),
+                            label = {
+                                Text(
+                                    text = "₹${tier.amountInr} (+${tier.bonusCoins} Bonus)",
+                                    fontWeight = FontWeight.Black
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = CrystalAuroraBlue,
+                                selectedLabelColor = Color.Black,
+                                containerColor = CrystalGlassSurface,
+                                labelColor = PlaytTextSecondary
+                            )
+                        )
+                    }
+                }
+            }
+
+            // 2. OriginOS 7 Crystal QR Scanner Card
+            item {
+                Surface(
+                    color = CrystalGlassSurface,
+                    shape = RoundedCornerShape(28.dp),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.3.dp,
+                        crystalSpecularBorderBrush(CrystalAuroraBlue)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(crystalSurfaceBrush(CrystalAuroraBlue))
+                            .padding(18.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = config.merchantName,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Black,
+                                    color = PlaytTextPrimary
+                                )
+                                Text(
+                                    text = "UPI ID: ${config.upiId}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = CrystalAuroraBlue,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Surface(
+                                color = PlaytCrimson.copy(alpha = 0.22f),
+                                shape = RoundedCornerShape(50),
+                                border = androidx.compose.foundation.BorderStroke(0.8.dp, PlaytCrimson)
+                            ) {
+                                Text(
+                                    text = "SESSION $timerFormatted",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Black,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Image(
+                            painter = painterResource(id = R.drawable.img_pybattle_qr),
+                            contentDescription = "PYBattle Official UPI QR",
+                            modifier = Modifier
+                                .size(220.dp)
+                                .clip(RoundedCornerShape(22.dp))
+                                .border(1.8.dp, CrystalSpecularHighlight, RoundedCornerShape(22.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
                         Text(
-                            text = "STEP 1: SELECT OR ENTER AMOUNT (₹)",
-                            style = MaterialTheme.typography.labelMedium,
+                            text = "Pay ₹${selectedTier.amountInr} -> ${selectedTier.totalCoins} PlayCoins (Credited on Admin Approval)",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Black,
+                            color = PlaytCoinGold,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        OutlinedButton(
+                            onClick = {
+                                val cb = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                cb.setPrimaryClip(ClipData.newPlainText("PYBattle UPI", config.upiId))
+                                viewModel.showMessage("Copied UPI ID: ${config.upiId}")
+                            },
+                            shape = RoundedCornerShape(50)
+                        ) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("COPY UPI ID: ${config.upiId}", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
+            // 3. Submit 12-Digit UTR for Admin Approval (PENDING)
+            item {
+                Surface(
+                    color = CrystalGlassSurface,
+                    shape = RoundedCornerShape(28.dp),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.2.dp,
+                        crystalSpecularBorderBrush(PlaytCoinGold)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .background(crystalSurfaceBrush(PlaytCoinGold))
+                            .padding(18.dp)
+                    ) {
+                        Text(
+                            text = "SUBMIT 12-DIGIT UTR FOR ADMIN VERIFICATION",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Black,
                             color = PlaytCoinGold
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            DEFAULT_ADD_CASH_TIERS.forEach { tier ->
-                                val isSel = amountInr == tier.amountInr
+                        Text(
+                            text = "Your deposit request will be logged as PENDING and credited as soon as Admin approves your UTR.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = PlaytTextSecondary
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf("GPay", "PhonePe", "Paytm", "FamApp").forEach { app ->
+                                val selected = selectedUpiApp == app
                                 FilterChip(
-                                    selected = isSel,
-                                    onClick = {
-                                        selectedTier = tier
-                                        customAmountText = tier.amountInr.toString()
-                                    },
-                                    label = {
-                                        Text(
-                                            text = if (tier.bonusCoins > 0) "₹${tier.amountInr} (+${tier.bonusCoins})" else "₹${tier.amountInr}",
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    },
+                                    selected = selected,
+                                    onClick = { selectedUpiApp = app },
+                                    shape = RoundedCornerShape(50),
+                                    label = { Text(app, fontWeight = FontWeight.Bold) },
                                     colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = PlaytCrimson,
-                                        containerColor = PlaytSurfaceElevated
+                                        selectedContainerColor = CrystalAuroraBlue,
+                                        selectedLabelColor = Color.Black
                                     )
                                 )
                             }
@@ -520,152 +693,9 @@ fun ManualQrAddMoneyScreen(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         OutlinedTextField(
-                            value = customAmountText,
-                            onValueChange = { input ->
-                                customAmountText = input.filter { it.isDigit() }.take(5)
-                            },
-                            label = { Text("Deposit Amount in INR (Daily Limit: ₹${profile?.dailyDepositLimit ?: 2000L})") },
-                            singleLine = true,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("qr_amount_input")
-                        )
-
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = "You will receive: 🪙 $amountInr Deposited + 🪙 $matchedBonus Bonus = 🪙 ${amountInr + matchedBonus} Total PlayCoins",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = PlaytVerifiedGreen,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
-
-            // 2. Branded PYBattle Verified Business QR Card (from Screenshot)
-            item {
-                Card(
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(1.5.dp, PlaytElectricBlue.copy(alpha = 0.6f), RoundedCornerShape(18.dp))
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(Icons.Default.Verified, contentDescription = null, tint = PlaytVerifiedGreen)
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "PYBattle • Verified Business QR",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = PlaytTextPrimary,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Image(
-                            painter = painterResource(id = R.drawable.img_pybattle_qr),
-                            contentDescription = "PYBattle Official UPI QR Code",
-                            contentScale = ContentScale.Fit,
-                            modifier = Modifier
-                                .size(230.dp)
-                                .clip(RoundedCornerShape(14.dp))
-                                .border(2.dp, Color.White, RoundedCornerShape(14.dp))
-                        )
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Text(
-                            text = "Scan & Pay ₹$amountInr using any UPI App",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = PlaytCoinGold,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // Copy UPI ID & Launch UPI Intent Row
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedButton(
-                                onClick = {
-                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                    clipboard.setPrimaryClip(ClipData.newPlainText("UPI ID", config.upiId))
-                                    viewModel.showMessage("Copied UPI ID: ${config.upiId}")
-                                },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Copy UPI ID", fontSize = 12.sp)
-                            }
-
-                            Button(
-                                onClick = {
-                                    selectedUpiApp = "UPI Intent App"
-                                    val upiUri = Uri.parse(
-                                        "upi://pay?pa=${config.upiId}&pn=${config.merchantName}&am=$amountInr&cu=INR"
-                                    )
-                                    val intent = Intent(Intent.ACTION_VIEW, upiUri)
-                                    try {
-                                        context.startActivity(intent)
-                                    } catch (_: Exception) {
-                                        viewModel.showMessage("Scan the QR code above or copy UPI ID ${config.upiId} to pay.")
-                                    }
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = PlaytElectricBlue),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Icon(Icons.Default.OpenInNew, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Open UPI App", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 3. Step 3: Enter 12-Digit UTR / Reference Number for Admin Approval
-            item {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = PlaytSurfaceElevated),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(1.dp, PlaytCoinGold, RoundedCornerShape(16.dp))
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Text(
-                            text = "STEP 2: SUBMIT 12-DIGIT UTR / UPI REF NO.",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = PlaytCoinGold,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "After paying ₹$amountInr on the QR code, enter your 12-digit UPI UTR / Reference ID below. Admin will verify and credit your wallet.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = PlaytTextSecondary
-                        )
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        OutlinedTextField(
                             value = utrInput,
-                            onValueChange = { utrInput = it.trim().take(20) },
-                            label = { Text("12-Digit UTR / UPI Reference Number *") },
+                            onValueChange = { utrInput = it.filter { ch -> ch.isDigit() }.take(12) },
+                            label = { Text("12-Digit UPI Reference / UTR Number") },
                             placeholder = { Text("e.g. 429812349876") },
                             singleLine = true,
                             modifier = Modifier
@@ -673,29 +703,30 @@ fun ManualQrAddMoneyScreen(
                                 .testTag("utr_number_input")
                         )
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
 
                         Button(
                             onClick = {
                                 viewModel.submitManualQrUtr(
-                                    amountInr = amountInr,
-                                    bonusCoins = matchedBonus,
+                                    amountInr = selectedTier.amountInr,
+                                    bonusCoins = selectedTier.bonusCoins,
                                     utrNumber = utrInput,
                                     paymentApp = selectedUpiApp
                                 )
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = PlaytVerifiedGreen),
+                            shape = RoundedCornerShape(50),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(50.dp)
+                                .height(54.dp)
                                 .testTag("submit_utr_button")
                         ) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null)
+                            Icon(Icons.Default.Send, contentDescription = null, tint = Color.Black)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "SUBMIT UTR FOR ₹$amountInr (+${matchedBonus} BONUS)",
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color.White
+                                text = "SUBMIT UTR FOR APPROVAL (₹${selectedTier.amountInr})",
+                                color = Color.Black,
+                                fontWeight = FontWeight.Black
                             )
                         }
                     }
@@ -709,116 +740,136 @@ fun ManualQrAddMoneyScreen(
 fun WithdrawCoinsScreen(
     viewModel: Playt24ViewModel
 ) {
-    BackHandler { viewModel.navigateBack() }
-
     val profile by viewModel.userProfile.collectAsState()
     val config by viewModel.platformConfig.collectAsState()
 
-    var amountText by remember { mutableStateOf("100") }
-    var upiAddress by remember { mutableStateOf("") }
+    BackHandler { viewModel.navigateBack() }
 
-    val amountCoins = amountText.toLongOrNull() ?: 0L
+    var amountInput by remember { mutableStateOf("100") }
+    var upiAddressInput by remember { mutableStateOf("") }
+
+    val amountCoins = amountInput.toLongOrNull() ?: 0L
     val tdsInr = if (amountCoins >= 100L) (amountCoins * 30L) / 100L else 0L
-    val netPayout = (amountCoins - tdsInr).coerceAtLeast(0L)
+    val netPayoutInr = (amountCoins - tdsInr).coerceAtLeast(0L)
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(PlaytBgObsidian)
-    ) {
-        Surface(color = PlaytSurfaceDark) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { viewModel.navigateBack() }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-                }
-                Text(
-                    text = "WITHDRAW WINNING PLAYCOINS",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
+    Column(modifier = Modifier.fillMaxSize()) {
+        OverlayTopAppBar(
+            title = "WITHDRAW WINNING PLAYCOINS",
+            onBack = { viewModel.navigateBack() }
+        )
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(14.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark),
-                modifier = Modifier.fillMaxWidth().border(1.dp, PlaytCardBorder, RoundedCornerShape(16.dp))
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("AVAILABLE WINNING BALANCE", style = MaterialTheme.typography.labelMedium, color = PlaytTextSecondary)
-                    Text(
-                        text = "🪙 ${profile?.winningCoins ?: 0L} PlayCoins",
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = PlaytVerifiedGreen,
-                        fontWeight = FontWeight.ExtraBold
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.VerifiedUser,
-                            contentDescription = null,
-                            tint = if (profile?.kycStatus == "VERIFIED") PlaytVerifiedGreen else PlaytWarning,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
+            item {
+                Surface(
+                    color = CrystalGlassSurface,
+                    shape = RoundedCornerShape(28.dp),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.2.dp,
+                        crystalSpecularBorderBrush(PlaytVerifiedGreen)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .background(crystalSurfaceBrush(PlaytVerifiedGreen))
+                            .padding(18.dp)
+                    ) {
                         Text(
-                            text = "KYC Status: ${profile?.kycStatus ?: "VERIFIED"} • Min Withdrawal: ${config.minWithdrawalCoins} Coins",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = PlaytTextPrimary
+                            text = "WITHDRAWABLE WINNINGS BALANCE",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = PlaytTextSecondary
+                        )
+                        Text(
+                            text = "₹${profile?.winningCoins ?: 0L} PlayCoins",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Black,
+                            color = PlaytVerifiedGreen
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "KYC Status: ${profile?.kycStatus ?: "PENDING"} • Min Withdrawal: ₹${config.minWithdrawalCoins}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (profile?.kycStatus == "VERIFIED") PlaytVerifiedGreen else PlaytCoinGold,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
             }
 
-            OutlinedTextField(
-                value = amountText,
-                onValueChange = { amountText = it.filter { ch -> ch.isDigit() }.take(6) },
-                label = { Text("Coins to Withdraw (1 Coin = ₹1)") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth().testTag("withdraw_amount_input")
-            )
-
-            OutlinedTextField(
-                value = upiAddress,
-                onValueChange = { upiAddress = it },
-                label = { Text("Your Verified UPI ID or Bank A/C + IFSC *") },
-                placeholder = { Text("e.g. player@okaxis") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth().testTag("withdraw_upi_input")
-            )
-
-            Surface(
-                color = PlaytSurfaceElevated,
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Text("Statutory TDS Breakdown (Section 194BA):", style = MaterialTheme.typography.labelMedium, color = PlaytCoinGold)
-                    Text("• Gross Withdrawal: ₹$amountCoins", style = MaterialTheme.typography.bodySmall, color = PlaytTextPrimary)
-                    Text("• TDS Deducted (30% on net winnings ≥ ₹100): -₹$tdsInr", style = MaterialTheme.typography.bodySmall, color = PlaytTextSecondary)
-                    Text("• Net Payout to UPI: ₹$netPayout", style = MaterialTheme.typography.titleMedium, color = PlaytVerifiedGreen, fontWeight = FontWeight.Bold)
+            item {
+                Surface(
+                    color = CrystalGlassSurface,
+                    shape = RoundedCornerShape(28.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.1.dp, crystalSpecularBorderBrush(CrystalAuroraBlue)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .background(crystalSurfaceBrush(CrystalAuroraBlue))
+                            .padding(18.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = amountInput,
+                            onValueChange = { amountInput = it.filter { ch -> ch.isDigit() } },
+                            label = { Text("Withdrawal PlayCoins (Min ₹${config.minWithdrawalCoins})") },
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("withdraw_amount_input")
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        OutlinedTextField(
+                            value = upiAddressInput,
+                            onValueChange = { upiAddressInput = it },
+                            label = { Text("Destination UPI ID (e.g. player@okaxis)") },
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("withdraw_upi_input")
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Surface(
+                            color = Color.White.copy(alpha = 0.08f),
+                            shape = RoundedCornerShape(16.dp),
+                            border = androidx.compose.foundation.BorderStroke(0.8.dp, CrystalSpecularHighlight),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(
+                                    text = "SEC 194BA TDS SUMMARY",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = PlaytCoinGold,
+                                    fontWeight = FontWeight.Black
+                                )
+                                Text(
+                                    text = "Requested: ₹$amountCoins  |  TDS (30%): -₹$tdsInr  |  Net Payout: ₹$netPayoutInr",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = PlaytTextPrimary
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Button(
+                            onClick = { viewModel.requestWithdrawal(amountCoins, upiAddressInput) },
+                            colors = ButtonDefaults.buttonColors(containerColor = PlaytVerifiedGreen),
+                            shape = RoundedCornerShape(50),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp)
+                                .testTag("confirm_withdraw_button")
+                        ) {
+                            Text(
+                                text = "REQUEST ₹$netPayoutInr PAYOUT",
+                                color = Color.Black,
+                                fontWeight = FontWeight.Black
+                            )
+                        }
+                    }
                 }
-            }
-
-            Button(
-                onClick = { viewModel.requestWithdrawal(amountCoins, upiAddress) },
-                colors = ButtonDefaults.buttonColors(containerColor = PlaytCrimson),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
-                    .testTag("submit_withdrawal_button")
-            ) {
-                Text("REQUEST PAYOUT (₹$netPayout)", fontWeight = FontWeight.ExtraBold)
             }
         }
     }
@@ -828,73 +879,55 @@ fun WithdrawCoinsScreen(
 fun TransactionHistoryScreen(
     viewModel: Playt24ViewModel
 ) {
-    BackHandler { viewModel.navigateBack() }
-
     val transactions by viewModel.walletTransactions.collectAsState()
     var filterType by remember { mutableStateOf("ALL") }
-    var selectedTx by remember { mutableStateOf<WalletTransaction?>(null) }
 
-    val types = listOf("ALL", "DEPOSIT_UTR", "MATCH_ENTRY", "MATCH_WINNING", "WITHDRAWAL", "BONUS_CREDIT")
+    BackHandler { viewModel.navigateBack() }
+
     val filtered = remember(transactions, filterType) {
-        if (filterType == "ALL") transactions else transactions.filter { it.type == filterType }
+        if (filterType == "ALL") transactions
+        else transactions.filter { it.type == filterType }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(PlaytBgObsidian)
-    ) {
-        Surface(color = PlaytSurfaceDark) {
-            Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { viewModel.navigateBack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-                    }
-                    Text(
-                        text = "WALLET TRANSACTIONS & GST/TDS INVOICES",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    types.forEach { t ->
-                        FilterChip(
-                            selected = filterType == t,
-                            onClick = { filterType = t },
-                            label = { Text(t.replace("_", " ")) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = PlaytCrimson,
-                                containerColor = PlaytSurfaceElevated
-                            )
-                        )
-                    }
-                }
+    Column(modifier = Modifier.fillMaxSize()) {
+        OverlayTopAppBar(
+            title = "CRYSTAL VAULT PASSBOOK",
+            onBack = { viewModel.navigateBack() }
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            listOf(
+                "ALL" to "All Entries",
+                "DEPOSIT_UTR" to "QR Deposits",
+                "MATCH_ENTRY" to "Match Entries",
+                "MATCH_WINNING" to "Booyah Winnings",
+                "WITHDRAWAL" to "Withdrawals",
+                "BONUS_CREDIT" to "Bonus Rewards"
+            ).forEach { (key, label) ->
+                FilterChip(
+                    selected = filterType == key,
+                    onClick = { filterType = key },
+                    shape = RoundedCornerShape(50),
+                    label = { Text(label, fontWeight = FontWeight.Bold) }
+                )
             }
         }
 
-        if (filtered.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No transactions found for $filterType", color = PlaytTextSecondary)
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(14.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(filtered, key = { it.id }) { tx ->
-                    TransactionRowCard(tx = tx, onClick = { selectedTx = tx })
-                }
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            items(filtered, key = { it.id }) { tx ->
+                TransactionRowCard(tx = tx, onClick = {})
             }
         }
-    }
-
-    if (selectedTx != null) {
-        TaxInvoiceDialog(tx = selectedTx!!, onDismiss = { selectedTx = null })
     }
 }
 
@@ -903,23 +936,27 @@ private fun TransactionRowCard(
     tx: WalletTransaction,
     onClick: () -> Unit
 ) {
-    val isPositive = tx.type in listOf("DEPOSIT_UTR", "MATCH_WINNING", "MATCH_REFUND", "BONUS_CREDIT")
-    val statusColor = when (tx.status) {
-        "APPROVED", "COMPLETED" -> PlaytVerifiedGreen
-        "PENDING" -> PlaytWarning
-        else -> PlaytDanger
+    val isCredit = tx.type in listOf("DEPOSIT_UTR", "MATCH_WINNING", "BONUS_CREDIT", "MATCH_REFUND")
+    val statusAccent = when (tx.status) {
+        "PENDING" -> PlaytCoinGold
+        "REJECTED" -> PlaytDanger
+        else -> if (isCredit) PlaytVerifiedGreen else PlaytCrimson
     }
 
-    Card(
+    Surface(
+        color = CrystalGlassSurface,
+        shape = RoundedCornerShape(22.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, crystalSpecularBorderBrush(statusAccent)),
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, PlaytCardBorder, RoundedCornerShape(14.dp))
-            .clickable { onClick() },
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark)
+            .clip(RoundedCornerShape(22.dp))
+            .clickable { onClick() }
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(crystalSurfaceBrush(statusAccent))
+                .padding(14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -927,25 +964,25 @@ private fun TransactionRowCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = tx.type.replace("_", " "),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = PlaytTextPrimary,
-                        fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Black,
+                        color = PlaytTextPrimary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Surface(
-                        color = statusColor.copy(alpha = 0.18f),
-                        shape = RoundedCornerShape(6.dp)
+                        color = statusAccent.copy(alpha = 0.20f),
+                        shape = RoundedCornerShape(50)
                     ) {
                         Text(
                             text = tx.status,
                             style = MaterialTheme.typography.labelSmall,
-                            color = statusColor,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            color = statusAccent,
+                            fontWeight = FontWeight.Black,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = tx.note,
                     style = MaterialTheme.typography.bodySmall,
@@ -953,66 +990,16 @@ private fun TransactionRowCard(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                Text(
-                    text = "Ref/UTR: ${tx.utrNumber} • Tap for GST/TDS Invoice",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = PlaytCoinGold
-                )
             }
-
             Spacer(modifier = Modifier.width(10.dp))
-
             Text(
-                text = "${if (isPositive) "+" else "-"}🪙 ${tx.amountCoins}",
-                style = MaterialTheme.typography.titleLarge,
-                color = if (isPositive) PlaytVerifiedGreen else PlaytCrimson,
-                fontWeight = FontWeight.ExtraBold
+                text = "${if (isCredit) "+" else "-"}₹${tx.amountCoins}",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Black,
+                color = statusAccent
             )
         }
     }
-}
-
-@Composable
-private fun TaxInvoiceDialog(
-    tx: WalletTransaction,
-    onDismiss: () -> Unit
-) {
-    val sdf = remember { SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()) }
-    val dateStr = tx.createdAt?.toDate()?.let { sdf.format(it) } ?: "Just Now"
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = PlaytSurfaceDark,
-        title = {
-            Text("PYBattle GST / TDS TAX INVOICE", style = MaterialTheme.typography.titleLarge, color = PlaytCoinGold)
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Invoice ID: ${tx.id.uppercase()}", style = MaterialTheme.typography.labelMedium, color = PlaytTextPrimary)
-                Text("Date: $dateStr", style = MaterialTheme.typography.bodySmall, color = PlaytTextSecondary)
-                Text("Player: ${tx.username}", style = MaterialTheme.typography.bodySmall, color = PlaytTextSecondary)
-                Text("Transaction Type: ${tx.type}", style = MaterialTheme.typography.bodySmall, color = PlaytTextPrimary)
-                Text("Status: ${tx.status}", style = MaterialTheme.typography.bodySmall, color = PlaytVerifiedGreen)
-                HorizontalDivider(color = PlaytCardBorder)
-                Text("Total PlayCoins: 🪙 ${tx.amountCoins}", style = MaterialTheme.typography.titleMedium, color = PlaytTextPrimary)
-                Text("• Deposited Bucket Delta: ${tx.depositedDelta}", style = MaterialTheme.typography.bodySmall, color = PlaytTextSecondary)
-                Text("• Winning Bucket Delta: ${tx.winningDelta}", style = MaterialTheme.typography.bodySmall, color = PlaytTextSecondary)
-                Text("• Bonus Bucket Delta: ${tx.bonusDelta}", style = MaterialTheme.typography.bodySmall, color = PlaytTextSecondary)
-                HorizontalDivider(color = PlaytCardBorder)
-                Text("GST Component (28% Included): ₹${tx.gstAmountInr}", style = MaterialTheme.typography.bodySmall, color = PlaytCoinGold)
-                Text("TDS Component (30% Sec 194BA): ₹${tx.tdsAmountInr}", style = MaterialTheme.typography.bodySmall, color = PlaytCoinGold)
-                Text("UTR / Reference: ${tx.utrNumber}", style = MaterialTheme.typography.labelSmall, color = PlaytTextSecondary)
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = onDismiss,
-                colors = ButtonDefaults.buttonColors(containerColor = PlaytCrimson)
-            ) {
-                Text("CLOSE INVOICE")
-            }
-        }
-    )
 }
 
 @Composable
@@ -1024,157 +1011,184 @@ fun Playt24RankingTab(
     val monthly by viewModel.monthlyLeaderboard.collectAsState()
 
     var selectedPeriod by remember { mutableStateOf("DAILY") }
+
     val entries = when (selectedPeriod) {
         "DAILY" -> daily
         "WEEKLY" -> weekly
         else -> monthly
     }
 
-    val top3 = entries.take(3)
-    val rest = entries.drop(3)
-
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(PlaytBgObsidian)
+            .testTag("ranking_lazy_column"),
+        contentPadding = PaddingValues(bottom = 28.dp)
     ) {
-        // Period Selector Tabs (DAILY / WEEKLY / MONTHLY matching Screenshot)
-        Surface(color = PlaytCrimsonDark) {
-            Row(
+        item {
+            Surface(
+                shape = RoundedCornerShape(28.dp),
+                border = androidx.compose.foundation.BorderStroke(1.3.dp, crystalSpecularBorderBrush(PlaytCoinGold)),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(14.dp)
+                    .height(150.dp)
             ) {
-                listOf("DAILY", "WEEKLY", "MONTHLY").forEach { period ->
-                    val isSel = selectedPeriod == period
-                    Surface(
-                        color = if (isSel) PlaytBgObsidian else Color.Transparent,
-                        shape = RoundedCornerShape(10.dp),
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Image(
+                        painter = painterResource(id = R.drawable.img_pybattle_banner_leaderboard),
+                        contentDescription = "PYBattle Pro Leaderboard",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                    Box(
                         modifier = Modifier
-                            .weight(1f)
-                            .clickable { selectedPeriod = period }
-                            .testTag("ranking_tab_$period")
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(Color.Transparent, Color(0xEB060913))
+                                )
+                            )
+                    )
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(16.dp)
                     ) {
                         Text(
-                            text = period,
+                            text = "CRYSTAL HALL OF CHAMPIONS",
                             style = MaterialTheme.typography.titleMedium,
-                            color = if (isSel) PlaytCoinGold else Color.White,
-                            fontWeight = FontWeight.ExtraBold,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(vertical = 8.dp)
+                            fontWeight = FontWeight.Black,
+                            color = PlaytCoinGold
+                        )
+                        Text(
+                            text = "Top 15 Verified Free Fire Slayers",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = PlaytTextPrimary
                         )
                     }
                 }
             }
         }
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            // Top 3 Podium Cards
-            if (top3.size >= 3) {
-                item {
-                    Card(
-                        shape = RoundedCornerShape(18.dp),
-                        colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark),
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                listOf("DAILY", "WEEKLY", "MONTHLY").forEach { period ->
+                    val selected = selectedPeriod == period
+                    Surface(
+                        color = if (selected) CrystalAuroraBlue else CrystalGlassSurface,
+                        shape = RoundedCornerShape(50),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, CrystalSpecularHighlight),
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .border(1.dp, PlaytCoinGold.copy(alpha = 0.4f), RoundedCornerShape(18.dp))
+                            .weight(1f)
+                            .clip(RoundedCornerShape(50))
+                            .clickable { selectedPeriod = period }
                     ) {
-                        Column(
-                            modifier = Modifier.padding(14.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                text = "🏆 TOP 10 LEADERBOARD PRIZE POOL • 100% ANTI-CHEAT VERIFIED",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = PlaytCoinGold,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(14.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceEvenly,
-                                verticalAlignment = Alignment.Bottom
-                            ) {
-                                PodiumPlayerColumn(entry = top3[1], medal = "🥈 #2", heightDp = 110, badgeColor = Color(0xFFCBD5E1))
-                                PodiumPlayerColumn(entry = top3[0], medal = "👑 #1", heightDp = 132, badgeColor = PlaytCoinGold)
-                                PodiumPlayerColumn(entry = top3[2], medal = "🥉 #3", heightDp = 100, badgeColor = Color(0xFFD97706))
-                            }
-                        }
+                        Text(
+                            text = period,
+                            fontWeight = FontWeight.Black,
+                            color = if (selected) Color.Black else PlaytTextSecondary,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(vertical = 10.dp)
+                        )
                     }
                 }
             }
+        }
 
-            // Table Header
+        if (entries.size >= 3) {
             item {
+                val first = entries[0]
+                val second = entries[1]
+                val third = entries[2]
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(PlaytCrimson, RoundedCornerShape(10.dp))
-                        .padding(horizontal = 14.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .padding(horizontal = 14.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.Bottom
                 ) {
-                    Text("#", style = MaterialTheme.typography.labelMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text("Players", style = MaterialTheme.typography.labelMedium, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text("Winnings (PlayCoins)", style = MaterialTheme.typography.labelMedium, color = Color.White, fontWeight = FontWeight.Bold)
+                    CrystalPodiumCard(
+                        rank = "#2",
+                        entry = second,
+                        accent = CrystalAuroraBlue,
+                        heightDp = 150,
+                        modifier = Modifier.weight(1f)
+                    )
+                    CrystalPodiumCard(
+                        rank = "👑 #1",
+                        entry = first,
+                        accent = PlaytCoinGold,
+                        heightDp = 180,
+                        modifier = Modifier.weight(1.12f)
+                    )
+                    CrystalPodiumCard(
+                        rank = "#3",
+                        entry = third,
+                        accent = CrystalAuroraRose,
+                        heightDp = 138,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
+        }
 
-            items(rest, key = { it.id }) { row ->
-                Surface(
-                    color = PlaytSurfaceDark,
-                    shape = RoundedCornerShape(12.dp),
+        items(entries.drop(3), key = { it.id }) { row ->
+            Surface(
+                color = CrystalGlassSurface,
+                shape = RoundedCornerShape(22.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, crystalSpecularBorderBrush(CrystalAuroraBlue)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 4.dp)
+            ) {
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, PlaytCardBorder, RoundedCornerShape(12.dp))
+                        .background(crystalSurfaceBrush(CrystalAuroraBlue))
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "${row.position}",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = PlaytCoinGold,
-                            fontWeight = FontWeight.ExtraBold,
-                            modifier = Modifier.width(34.dp)
-                        )
-                        Row(
-                            modifier = Modifier.weight(1f),
-                            verticalAlignment = Alignment.CenterVertically
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            color = Color.White.copy(alpha = 0.10f),
+                            shape = RoundedCornerShape(50),
+                            border = androidx.compose.foundation.BorderStroke(0.8.dp, CrystalSpecularHighlight)
                         ) {
                             Text(
-                                text = row.playerName,
-                                style = MaterialTheme.typography.titleMedium,
-                                color = PlaytTextPrimary,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                text = "#${row.position}",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Black,
+                                color = CrystalAuroraBlue,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                             )
-                            if (row.antiCheatClean) {
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Icon(
-                                    imageVector = Icons.Default.VerifiedUser,
-                                    contentDescription = "Anti-Cheat Verified",
-                                    tint = PlaytVerifiedGreen,
-                                    modifier = Modifier.size(15.dp)
-                                )
-                            }
                         }
-                        Text(
-                            text = "🪙 ${row.winningCoins}",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = PlaytCoinGold,
-                            fontWeight = FontWeight.ExtraBold
-                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = row.playerName,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Black,
+                                color = PlaytTextPrimary
+                            )
+                            Text(
+                                text = "UID: ${row.ffUid} • ${row.kills} Kills",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = PlaytTextSecondary
+                            )
+                        }
                     }
+                    Text(
+                        text = "₹${row.winningCoins}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Black,
+                        color = PlaytCoinGold
+                    )
                 }
             }
         }
@@ -1182,52 +1196,64 @@ fun Playt24RankingTab(
 }
 
 @Composable
-private fun PodiumPlayerColumn(
+private fun CrystalPodiumCard(
+    rank: String,
     entry: LeaderboardEntry,
-    medal: String,
+    accent: Color,
     heightDp: Int,
-    badgeColor: Color
+    modifier: Modifier = Modifier
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(100.dp)
+    Surface(
+        color = CrystalGlassSurface,
+        shape = RoundedCornerShape(26.dp),
+        border = androidx.compose.foundation.BorderStroke(1.4.dp, crystalSpecularBorderBrush(accent)),
+        shadowElevation = 14.dp,
+        modifier = modifier.height(heightDp.dp)
     ) {
-        Box(
+        Column(
             modifier = Modifier
-                .size(52.dp)
-                .clip(CircleShape)
-                .background(badgeColor.copy(alpha = 0.2f))
-                .border(2.dp, badgeColor, CircleShape),
-            contentAlignment = Alignment.Center
+                .fillMaxSize()
+                .background(crystalSurfaceBrush(accent))
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = entry.playerName,
-                tint = badgeColor,
-                modifier = Modifier.size(30.dp)
+            Surface(
+                color = accent.copy(alpha = 0.22f),
+                shape = RoundedCornerShape(50),
+                border = androidx.compose.foundation.BorderStroke(0.8.dp, CrystalSpecularHighlight)
+            ) {
+                Text(
+                    text = rank,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Black,
+                    color = accent,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                )
+            }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = entry.playerName,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Black,
+                    color = PlaytTextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = "${entry.kills} Kills",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = PlaytTextSecondary
+                )
+            }
+            Text(
+                text = "₹${entry.winningCoins}",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Black,
+                color = accent
             )
         }
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = medal,
-            style = MaterialTheme.typography.labelMedium,
-            color = badgeColor,
-            fontWeight = FontWeight.ExtraBold
-        )
-        Text(
-            text = entry.playerName,
-            style = MaterialTheme.typography.bodySmall,
-            color = PlaytTextPrimary,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Text(
-            text = "🪙 ${entry.winningCoins}",
-            style = MaterialTheme.typography.titleMedium,
-            color = PlaytCoinGold,
-            fontWeight = FontWeight.ExtraBold
-        )
     }
 }
 
@@ -1238,201 +1264,150 @@ fun Playt24OffersTab(
     val context = LocalContext.current
     val profile by viewModel.userProfile.collectAsState()
     val claimed by viewModel.claimedOffers.collectAsState()
-    val config by viewModel.platformConfig.collectAsState()
+
+    val quests = listOf(
+        Triple("daily_checkin", "Daily Crystal Login Crate", 5L),
+        Triple("first_booyah_quest", "Play 1 Full Map Match Quest", 10L),
+        Triple("squad_synergy", "Complete Squad Profile & UID Link", 15L),
+        Triple("fair_play_pledge", "Anti-Cheat Fair Play Honor Bonus", 10L)
+    )
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(PlaytBgObsidian),
+            .testTag("offers_lazy_column"),
         contentPadding = PaddingValues(14.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            Text(
-                text = viewModel.tr("EXCLUSIVE OFFERS & SKILL QUESTS", "DHAMAKA OFFERS AUR BONUS"),
-                style = MaterialTheme.typography.titleLarge,
-                color = PlaytTextPrimary,
-                fontWeight = FontWeight.ExtraBold
-            )
-        }
-
-        // 1. Non-Wagering Daily Check-In & Skill Quests
-        item {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark),
-                modifier = Modifier.fillMaxWidth().border(1.dp, PlaytCoinGold.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+            Surface(
+                color = CrystalGlassSurface,
+                shape = RoundedCornerShape(28.dp),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.3.dp,
+                    crystalSpecularBorderBrush(PlaytCoinGold)
+                ),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = "🎁 DAILY CHECK-IN & SKILL REWARDS (NON-WAGERING)",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = PlaytCoinGold,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    OfferQuestRow(
-                        title = "Daily Arena Check-In",
-                        subtitle = "Instant +5 Bonus PlayCoins (Usable at 10% per match)",
-                        isClaimed = "daily_checkin" in claimed,
-                        onClaim = { viewModel.claimOfferBonus("daily_checkin", 5L, "Daily Arena Check-In") }
-                    )
-
-                    OfferQuestRow(
-                        title = "First Match Warmup Bonus",
-                        subtitle = "Complete profile & FF UID verification for +10 Bonus Coins",
-                        isClaimed = "warmup_quest" in claimed,
-                        onClaim = { viewModel.claimOfferBonus("warmup_quest", 10L, "First Match Warmup Bonus") }
-                    )
-                }
-            }
-        }
-
-        // 2. Promotional Visual Banners (Matching Offer Screenshot)
-        item {
-            PromoBannerImageCard(
-                drawableRes = R.drawable.img_pybattle_banner_leaderboard,
-                caption = "Daily & Weekly Leaderboard Top-10 Prize Pool → Tap to View Ranks",
-                onClick = { viewModel.selectBottomTab(MainBottomTab.RANKING) }
-            )
-        }
-
-        item {
-            PromoBannerImageCard(
-                drawableRes = R.drawable.img_pybattle_banner_add_cash,
-                caption = "Add Cash Bonus: Deposit ₹75 Get 80 • Deposit ₹500 Get 570 Coins → Tap to Add",
-                onClick = { viewModel.openManualQrScreen(DEFAULT_ADD_CASH_TIERS[1]) }
-            )
-        }
-
-        item {
-            PromoBannerImageCard(
-                drawableRes = R.drawable.img_pybattle_banner_booyah,
-                caption = "₹1 Entry = ₹10,000 Mega Booyah Tournament → Tap to Join Now",
-                onClick = { viewModel.openTournamentList("FULL_MAP") }
-            )
-        }
-
-        item {
-            PromoBannerImageCard(
-                drawableRes = R.drawable.img_pybattle_banner_telegram,
-                caption = "Join Official PYBattle Telegram & WhatsApp Channels for Instant Room IDs",
-                onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(config.telegramChannelUrl))
-                    try {
-                        context.startActivity(intent)
-                    } catch (_: Exception) {
-                        viewModel.showMessage("Official Channel: ${config.telegramChannelUrl}")
-                    }
-                }
-            )
-        }
-
-        // 3. Refer & Earn Card with Anti-Fraud Rules
-        item {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = PlaytSurfaceElevated),
-                modifier = Modifier.fillMaxWidth().border(1.dp, PlaytCardBorder, RoundedCornerShape(16.dp))
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Text(
-                        text = "🤝 REFER SQUADMATES & EARN BONUS COINS",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = PlaytVerifiedGreen,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Share your invite code ${profile?.referralCode ?: "PYBPRO"}. Get +15 Bonus PlayCoins when your friend completes KYC & plays their first match (Device-bound anti-fraud verified).",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = PlaytTextSecondary
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Button(
-                        onClick = {
-                            val code = profile?.referralCode ?: "PYBPRO"
-                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            clipboard.setPrimaryClip(ClipData.newPlainText("Referral Code", code))
-                            viewModel.showMessage("Copied Referral Code $code!")
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = PlaytCrimson),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                Column(
+                    modifier = Modifier
+                        .background(crystalSurfaceBrush(PlaytCoinGold))
+                        .padding(18.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            tint = PlaytCoinGold
+                        )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("COPY REFERRAL CODE: ${profile?.referralCode ?: "PYBPRO"}", fontWeight = FontWeight.Bold)
+                        Text(
+                            text = "SQUAD REFERRAL BOUNTY",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Black,
+                            color = PlaytCoinGold
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Invite your Free Fire squad! Earn +25 Bonus PlayCoins when a squadmate joins their first paid tournament.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = PlaytTextPrimary
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            color = Color.White.copy(alpha = 0.10f),
+                            shape = RoundedCornerShape(50),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, CrystalSpecularHighlight)
+                        ) {
+                            Text(
+                                text = "CODE: ${profile?.referralCode ?: "PYBPRO24"}",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Black,
+                                color = PlaytCoinGold,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            )
+                        }
+                        Button(
+                            onClick = {
+                                val code = profile?.referralCode ?: "PYBPRO24"
+                                val cb = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                cb.setPrimaryClip(ClipData.newPlainText("PYBattle Referral", code))
+                                viewModel.showMessage("Copied Referral Code: $code")
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = PlaytCrimson),
+                            shape = RoundedCornerShape(50)
+                        ) {
+                            Text("COPY CODE", fontWeight = FontWeight.Black)
+                        }
                     }
                 }
             }
         }
-    }
-}
 
-@Composable
-private fun OfferQuestRow(
-    title: String,
-    subtitle: String,
-    isClaimed: Boolean,
-    onClaim: () -> Unit
-) {
-    Surface(
-        color = PlaytSurfaceElevated,
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium, color = PlaytTextPrimary, fontWeight = FontWeight.Bold)
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = PlaytTextSecondary)
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            Button(
-                onClick = onClaim,
-                enabled = !isClaimed,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isClaimed) PlaytVerifiedGreen else PlaytCrimson
-                )
-            ) {
-                Text(if (isClaimed) "CLAIMED ✓" else "CLAIM", fontWeight = FontWeight.Bold)
-            }
-        }
-    }
-}
-
-@Composable
-private fun PromoBannerImageCard(
-    drawableRes: Int,
-    caption: String,
-    onClick: () -> Unit
-) {
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark),
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(1.dp, PlaytCardBorder, RoundedCornerShape(16.dp))
-            .clickable { onClick() }
-    ) {
-        Column {
-            Image(
-                painter = painterResource(id = drawableRes),
-                contentDescription = caption,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(150.dp)
-            )
+        item {
             Text(
-                text = caption,
-                style = MaterialTheme.typography.labelMedium,
-                color = PlaytCoinGold,
-                modifier = Modifier.padding(10.dp)
+                text = "DAILY CRYSTAL MISSIONS",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Black,
+                color = PlaytTextPrimary
             )
+        }
+
+        items(quests, key = { it.first }) { (key, title, reward) ->
+            val isClaimed = key in claimed
+            Surface(
+                color = CrystalGlassSurface,
+                shape = RoundedCornerShape(24.dp),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.1.dp,
+                    crystalSpecularBorderBrush(if (isClaimed) PlaytVerifiedGreen else CrystalAuroraBlue)
+                ),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(crystalSurfaceBrush(CrystalAuroraBlue))
+                        .padding(14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Black,
+                            color = PlaytTextPrimary
+                        )
+                        Text(
+                            text = "Reward: +$reward Bonus PlayCoins (10% usable per entry)",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = PlaytCoinGold
+                        )
+                    }
+                    Button(
+                        onClick = { viewModel.claimOfferBonus(key, reward, title) },
+                        enabled = !isClaimed,
+                        shape = RoundedCornerShape(50),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = PlaytVerifiedGreen,
+                            disabledContainerColor = Color.White.copy(alpha = 0.08f)
+                        )
+                    ) {
+                        Text(
+                            text = if (isClaimed) "CLAIMED" else "CLAIM +$reward",
+                            color = if (isClaimed) PlaytTextSecondary else Color.Black,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
+                }
+            }
         }
     }
 }

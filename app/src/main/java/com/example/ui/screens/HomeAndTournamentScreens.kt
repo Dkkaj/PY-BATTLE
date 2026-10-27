@@ -5,7 +5,8 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,6 +27,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -44,6 +46,7 @@ import com.example.ui.ActiveOverlayScreen
 import com.example.ui.MainBottomTab
 import com.example.ui.Playt24ViewModel
 import com.example.ui.theme.*
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -58,255 +61,353 @@ fun Playt24AuthScreen(
     val authHelper = remember { GoogleAuthHelper(context) }
 
     var ageConfirmed by remember { mutableStateOf(true) }
-    var termsConfirmed by remember { mutableStateOf(true) }
-    var selectedState by remember { mutableStateOf("Delhi") }
-    var referralInput by remember { mutableStateOf("") }
-    var authError by remember { mutableStateOf<String?>(null) }
+    var skillComplianceAccepted by remember { mutableStateOf(true) }
+    var selectedState by remember { mutableStateOf("Maharashtra") }
     var isSigningIn by remember { mutableStateOf(false) }
+    var errorMsg by remember { mutableStateOf<String?>(null) }
 
-    val statesList = remember {
-        listOf(
-            "Delhi", "Maharashtra", "Uttar Pradesh", "Karnataka", "Bihar",
-            "West Bengal", "Rajasthan", "Gujarat", "Madhya Pradesh",
-            "Assam (Restricted)", "Odisha (Restricted)", "Telangana (Restricted)"
-        )
-    }
+    val indianStates = listOf(
+        "Maharashtra", "Delhi NCR", "Uttar Pradesh", "Karnataka",
+        "Gujarat", "Rajasthan", "West Bengal", "Bihar", "Madhya Pradesh",
+        "Punjab", "Haryana", "Tamil Nadu", "Assam (Restricted)", "Telangana (Restricted)"
+    )
 
-    Box(
+    val infiniteTransition = rememberInfiniteTransition(label = "crystalOrb")
+    val orbScale by infiniteTransition.animateFloat(
+        initialValue = 0.96f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "orbScale"
+    )
+
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(PlaytBgObsidian, PlaytSurfaceDark, PlaytBgObsidian)
-                )
-            )
-            .padding(horizontal = 20.dp),
-        contentAlignment = Alignment.Center
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp, vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .widthIn(max = 460.dp)
-                .border(1.dp, PlaytCardBorder, RoundedCornerShape(24.dp)),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark)
+        // OriginOS 7 Floating Crystal Icon Sphere
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.padding(bottom = 14.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(134.dp)
+                    .scale(orbScale)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.radialGradient(
+                            listOf(
+                                CrystalAuroraBlue.copy(alpha = 0.35f),
+                                CrystalAuroraViolet.copy(alpha = 0.16f),
+                                Color.Transparent
+                            )
+                        )
+                    )
+            )
+            Image(
+                painter = painterResource(id = R.drawable.img_pybattle_logo),
+                contentDescription = "PYBattle Crystal Crest",
+                modifier = Modifier
+                    .size(104.dp)
+                    .clip(RoundedCornerShape(30.dp))
+                    .border(
+                        width = 1.8.dp,
+                        brush = crystalSpecularBorderBrush(CrystalAuroraBlue),
+                        shape = RoundedCornerShape(30.dp)
+                    ),
+                contentScale = ContentScale.Crop
+            )
+        }
+
+        // OriginOS 7 Dynamic Capsule Tag
+        Surface(
+            color = CrystalGlassElevated,
+            shape = RoundedCornerShape(50),
+            border = androidx.compose.foundation.BorderStroke(1.dp, crystalSpecularBorderBrush(CrystalAuroraBlue))
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    tint = CrystalAuroraBlue,
+                    modifier = Modifier.size(14.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "ORIGIN CRYSTAL • ESPORTS OS 7",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = PlaytTextPrimary,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.1.sp
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Text(
+            text = "PYBattle",
+            style = MaterialTheme.typography.displayMedium.copy(
+                fontWeight = FontWeight.Black,
+                letterSpacing = 1.5.sp
+            ),
+            color = PlaytTextPrimary
+        )
+        Text(
+            text = "SPATIAL FREE FIRE & FF MAX TOURNAMENT HUB",
+            style = MaterialTheme.typography.labelMedium,
+            color = CrystalAuroraBlue,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp
+        )
+
+        Spacer(modifier = Modifier.height(22.dp))
+
+        // OriginOS 7 Frosted Crystal Compliance Widget
+        Surface(
+            color = CrystalGlassSurface,
+            shape = RoundedCornerShape(28.dp),
+            border = androidx.compose.foundation.BorderStroke(
+                1.2.dp,
+                crystalSpecularBorderBrush(CrystalAuroraViolet)
+            ),
+            modifier = Modifier.fillMaxWidth()
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .background(crystalSurfaceBrush(CrystalAuroraViolet))
+                    .padding(20.dp)
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.img_pybattle_logo),
-                    contentDescription = "PYBattle Official Logo",
-                    modifier = Modifier
-                        .size(88.dp)
-                        .clip(CircleShape)
-                        .border(2.dp, PlaytCrimson, CircleShape),
-                    contentScale = ContentScale.Crop
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = "PYBattle ESPORTS",
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = PlaytTextPrimary,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "INDIA'S SKILL-BASED FREE FIRE MAX ARENA",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = PlaytCoinGold,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Compliance Notice Pill
-                Surface(
-                    color = PlaytSurfaceElevated,
-                    shape = RoundedCornerShape(12.dp),
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.VerifiedUser,
-                            contentDescription = "Skill Esports",
+                            contentDescription = "Esports Compliance Shield",
                             tint = PlaytVerifiedGreen,
                             modifier = Modifier.size(20.dp)
                         )
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "100% Skill Esports • Fixed Prize Pools • No Betting or Odds • Anti-Cheat Protected",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = PlaytTextSecondary
+                            text = "SPATIAL CLEARANCE GATE",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = PlaytTextPrimary,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
+                    Surface(
+                        color = Color.White.copy(alpha = 0.10f),
+                        shape = RoundedCornerShape(50),
+                        border = androidx.compose.foundation.BorderStroke(0.8.dp, CrystalSpecularHighlight)
+                    ) {
+                        Text(
+                            text = "18+ SKILL",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = PlaytVerifiedGreen,
+                            fontWeight = FontWeight.ExtraBold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // State Selector Chips
                 Text(
-                    text = "Select Your State (Geo-Compliance)",
+                    text = "Select Home State (Geo-Compliance)",
                     style = MaterialTheme.typography.labelMedium,
-                    color = PlaytTextSecondary,
-                    modifier = Modifier.align(Alignment.Start)
+                    color = PlaytTextSecondary
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    statesList.forEach { stateItem ->
-                        val cleanState = stateItem.substringBefore(" (")
-                        val isRestricted = stateItem.contains("Restricted")
-                        val isSelected = selectedState == cleanState
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = { selectedState = cleanState },
-                            label = {
-                                Text(
-                                    text = stateItem,
-                                    fontSize = 12.sp,
-                                    color = if (isSelected) Color.White else PlaytTextPrimary
-                                )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = if (isRestricted) PlaytWarning else PlaytCrimson,
-                                containerColor = PlaytSurfaceElevated
+                    indianStates.forEach { stateItem ->
+                        val isSelected = selectedState == stateItem
+                        Surface(
+                            color = if (isSelected) CrystalAuroraBlue.copy(alpha = 0.28f) else Color.White.copy(alpha = 0.06f),
+                            shape = RoundedCornerShape(50),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                if (isSelected) CrystalAuroraBlue else CrystalSubtleEdge
+                            ),
+                            modifier = Modifier.clickable { selectedState = stateItem }
+                        ) {
+                            Text(
+                                text = stateItem,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (isSelected) Color.White else PlaytTextSecondary,
+                                fontWeight = if (isSelected) FontWeight.Black else FontWeight.Medium,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                             )
-                        )
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
-
-                OutlinedTextField(
-                    value = referralInput,
-                    onValueChange = { referralInput = it.uppercase().take(12) },
-                    label = { Text("Referral Code (Optional)") },
-                    placeholder = { Text("e.g. PYBPRO") },
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("referral_code_input"),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = PlaytCrimson,
-                        unfocusedBorderColor = PlaytCardBorder
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(Color.White.copy(alpha = 0.06f))
                         .clickable { ageConfirmed = !ageConfirmed }
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
                 ) {
                     Checkbox(
                         checked = ageConfirmed,
                         onCheckedChange = { ageConfirmed = it },
-                        colors = CheckboxDefaults.colors(checkedColor = PlaytCrimson)
+                        colors = CheckboxDefaults.colors(checkedColor = CrystalAuroraBlue),
+                        modifier = Modifier.testTag("auth_age_checkbox")
                     )
                     Text(
-                        text = "I confirm I am 18+ years old and playing skill-based esports tournaments.",
+                        text = "I confirm I am 18+ years old and eligible for skill-based esports tournaments in my state.",
                         style = MaterialTheme.typography.bodySmall,
                         color = PlaytTextPrimary
                     )
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { termsConfirmed = !termsConfirmed }
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(Color.White.copy(alpha = 0.06f))
+                        .clickable { skillComplianceAccepted = !skillComplianceAccepted }
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
                 ) {
                     Checkbox(
-                        checked = termsConfirmed,
-                        onCheckedChange = { termsConfirmed = it },
-                        colors = CheckboxDefaults.colors(checkedColor = PlaytCrimson)
+                        checked = skillComplianceAccepted,
+                        onCheckedChange = { skillComplianceAccepted = it },
+                        colors = CheckboxDefaults.colors(checkedColor = PlaytVerifiedGreen),
+                        modifier = Modifier.testTag("auth_skill_checkbox")
                     )
                     Text(
-                        text = "I accept PYBattle Terms, Privacy Policy, Fair Play & TDS/GST rules.",
+                        text = "I agree to PYBattle Fair-Play Rules: fixed prize pools, zero betting/odds, and zero emulator/hack usage.",
                         style = MaterialTheme.typography.bodySmall,
                         color = PlaytTextPrimary
                     )
                 }
+            }
+        }
 
-                if (authError != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Surface(
-                        color = PlaytDanger.copy(alpha = 0.15f),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = authError ?: "",
-                            color = PlaytDanger,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(10.dp)
-                        )
+        if (errorMsg != null) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Surface(
+                color = PlaytDanger.copy(alpha = 0.18f),
+                shape = RoundedCornerShape(18.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, PlaytDanger),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = errorMsg ?: "",
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(12.dp),
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // OriginOS 7 Liquid Crystal Sign-In Pill Button
+        Surface(
+            color = if (ageConfirmed && skillComplianceAccepted && !isSigningIn) {
+                PlaytCrimson
+            } else {
+                CrystalGlassElevated
+            },
+            shape = RoundedCornerShape(28.dp),
+            border = androidx.compose.foundation.BorderStroke(
+                1.2.dp,
+                crystalSpecularBorderBrush(PlaytCrimson)
+            ),
+            shadowElevation = 16.dp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(58.dp)
+                .clip(RoundedCornerShape(28.dp))
+                .clickable(enabled = ageConfirmed && skillComplianceAccepted && !isSigningIn) {
+                    val activity = context as? Activity
+                    if (activity == null) {
+                        errorMsg = "Activity context unavailable for Google Sign-In."
+                        return@clickable
+                    }
+                    isSigningIn = true
+                    errorMsg = null
+                    scope.launch {
+                        authHelper.signIn(activity)
+                            .onSuccess { user ->
+                                isSigningIn = false
+                                onSignedIn(user)
+                            }
+                            .onFailure { err ->
+                                isSigningIn = false
+                                errorMsg = err.localizedMessage ?: "Sign-in failed. Please try again."
+                            }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Button(
-                    onClick = {
-                        if (!ageConfirmed || !termsConfirmed) {
-                            authError = "Please confirm 18+ age verification and Terms & Conditions to continue."
-                            return@Button
-                        }
-                        val activity = context as? Activity
-                        if (activity == null) {
-                            authError = "Activity context unavailable for Google Sign-In."
-                            return@Button
-                        }
-                        authError = null
-                        isSigningIn = true
-                        scope.launch {
-                            val result = authHelper.signIn(activity)
-                            isSigningIn = false
-                            result.onSuccess { user ->
-                                onSignedIn(user)
-                            }.onFailure { err ->
-                                authError = err.localizedMessage ?: "Google Sign-In failed. Please try again."
-                            }
-                        }
-                    },
-                    enabled = !isSigningIn,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(54.dp)
-                        .testTag("google_sign_in_button"),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PlaytCrimson)
-                ) {
+                .testTag("google_sign_in_button")
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(
+                                Color.White.copy(alpha = 0.18f),
+                                Color.Transparent,
+                                Color.White.copy(alpha = 0.10f)
+                            )
+                        )
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     if (isSigningIn) {
                         CircularProgressIndicator(
                             color = Color.White,
-                            strokeWidth = 2.dp,
+                            strokeWidth = 2.5.dp,
                             modifier = Modifier.size(22.dp)
                         )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text("CONNECTING TO PYBattle...", fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "AUTHENTICATING...",
+                            color = Color.White,
+                            fontWeight = FontWeight.Black
+                        )
                     } else {
-                        Icon(Icons.Default.SportsEsports, contentDescription = null)
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = "SIGN IN WITH GOOGLE",
+                            text = "CONTINUE WITH GOOGLE",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Black,
+                            color = Color.White
                         )
                     }
                 }
@@ -319,154 +420,180 @@ fun Playt24AuthScreen(
 fun Playt24TopHeader(
     profile: UserProfile?,
     onWalletClick: () -> Unit,
-    onAdminClick: () -> Unit,
     onSupportClick: () -> Unit
 ) {
-    Surface(
-        color = PlaytCrimson,
-        shadowElevation = 6.dp,
-        modifier = Modifier.fillMaxWidth()
+    val totalCoins = (profile?.depositedCoins ?: 0L) +
+        (profile?.winningCoins ?: 0L) +
+        (profile?.bonusCoins ?: 0L)
+
+    // OriginOS 7 Floating Crystal Island Header
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 8.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+        Surface(
+            color = CrystalGlassSurface,
+            shape = RoundedCornerShape(28.dp),
+            tonalElevation = 12.dp,
+            border = androidx.compose.foundation.BorderStroke(
+                width = 1.1.dp,
+                brush = crystalSpecularBorderBrush(CrystalAuroraBlue)
+            ),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Image(
-                    painter = painterResource(id = R.drawable.img_pybattle_logo),
-                    contentDescription = "PYBattle Emblem",
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .border(1.5.dp, PlaytCoinGold, CircleShape),
-                    contentScale = ContentScale.Crop
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Column {
-                    Text(
-                        text = if (profile?.language == "HI") "Swagat Hai," else "Welcome Back,",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = 0.9f)
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "PYBattle",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = Color.White,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                        if (profile?.kycStatus == "VERIFIED") {
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Icon(
-                                imageVector = Icons.Default.Verified,
-                                contentDescription = "KYC Verified",
-                                tint = PlaytCoinGold,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                }
-            }
-
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Admin Console Quick Pill
-                Surface(
-                    color = PlaytBgObsidian.copy(alpha = 0.85f),
-                    shape = RoundedCornerShape(50),
-                    modifier = Modifier
-                        .clickable { onAdminClick() }
-                        .testTag("open_admin_console_button")
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AdminPanelSettings,
-                            contentDescription = "Admin Console",
-                            tint = PlaytCoinGold,
-                            modifier = Modifier.size(16.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        Brush.horizontalGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0.10f),
+                                Color.Transparent,
+                                CrystalAuroraBlue.copy(alpha = 0.08f)
+                            )
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                    )
+                    .padding(horizontal = 12.dp, vertical = 9.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Left: Crystal Squircle Logo + OriginOS Atomic Status Pill
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Box(contentAlignment = Alignment.BottomEnd) {
+                        Image(
+                            painter = painterResource(id = R.drawable.img_pybattle_logo),
+                            contentDescription = "PYBattle Logo",
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(RoundedCornerShape(15.dp))
+                                .border(1.2.dp, CrystalSpecularHighlight, RoundedCornerShape(15.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                        Box(
+                            modifier = Modifier
+                                .size(11.dp)
+                                .clip(CircleShape)
+                                .background(PlaytVerifiedGreen)
+                                .border(1.5.dp, PlaytBgObsidian, CircleShape)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "PYBattle",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Black,
+                                color = PlaytTextPrimary
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Surface(
+                                color = Color.White.copy(alpha = 0.12f),
+                                shape = RoundedCornerShape(50),
+                                border = androidx.compose.foundation.BorderStroke(0.8.dp, CrystalSpecularHighlight)
+                            ) {
+                                Text(
+                                    text = "LV.${((profile?.matchesPlayed ?: 0L) / 2L) + 1L}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = CrystalAuroraBlue,
+                                    fontWeight = FontWeight.Black,
+                                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 1.dp)
+                                )
+                            }
+                        }
                         Text(
-                            text = "ADMIN",
+                            text = profile?.ffIgn?.ifBlank { profile.username } ?: "Crystal Player",
                             style = MaterialTheme.typography.labelSmall,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
+                            color = PlaytTextSecondary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
 
-                // Support Icon
-                IconButton(
-                    onClick = onSupportClick,
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(PlaytBgObsidian.copy(alpha = 0.5f))
-                        .testTag("top_support_button")
+                // Right: Frosted Support Orb + OriginOS Liquid Crystal Wallet Capsule
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.SupportAgent,
-                        contentDescription = "Customer Support",
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-
-                // PlayCoin Balance Chip (Matches screenshot `● 5 +`)
-                Surface(
-                    color = Color.White,
-                    shape = RoundedCornerShape(50),
-                    modifier = Modifier
-                        .clickable { onWalletClick() }
-                        .testTag("wallet_balance_chip")
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Surface(
+                        color = Color.White.copy(alpha = 0.08f),
+                        shape = CircleShape,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, CrystalSpecularHighlight),
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .clickable { onSupportClick() }
+                            .testTag("top_support_button")
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(20.dp)
-                                .clip(CircleShape)
-                                .background(PlaytCoinGold),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "₹",
-                                color = PlaytBgObsidian,
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 12.sp
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.SupportAgent,
+                                contentDescription = "Support Desk",
+                                tint = CrystalAuroraBlue,
+                                modifier = Modifier.size(19.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "${profile?.totalPlayCoins ?: 5L}",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = PlaytBgObsidian,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Box(
-                            modifier = Modifier
-                                .size(18.dp)
-                                .clip(CircleShape)
-                                .background(PlaytVerifiedGreen),
-                            contentAlignment = Alignment.Center
+                    }
+
+                    Surface(
+                        color = Color.White.copy(alpha = 0.10f),
+                        shape = RoundedCornerShape(50),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.2.dp,
+                            Brush.horizontalGradient(listOf(CrystalSpecularHighlight, PlaytCoinGold))
+                        ),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .clickable { onWalletClick() }
+                            .testTag("top_wallet_chip")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 11.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Add Coins",
-                                tint = Color.White,
-                                modifier = Modifier.size(13.dp)
+                            Box(
+                                modifier = Modifier
+                                    .size(22.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        Brush.radialGradient(listOf(PlaytCoinGold, PlaytOrange))
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "₹",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color.Black
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "$totalCoins",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White
                             )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(19.dp)
+                                    .clip(CircleShape)
+                                    .background(CrystalAuroraBlue),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Add Coins",
+                                    tint = Color.Black,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -479,289 +606,384 @@ fun Playt24TopHeader(
 fun Playt24HomeTab(
     viewModel: Playt24ViewModel
 ) {
-    val profile by viewModel.userProfile.collectAsState()
-    val config by viewModel.platformConfig.collectAsState()
     val upcoming by viewModel.upcomingTournaments.collectAsState()
     val ongoing by viewModel.ongoingTournaments.collectAsState()
     val completed by viewModel.completedTournaments.collectAsState()
     val registrations by viewModel.userRegistrations.collectAsState()
+    val config by viewModel.platformConfig.collectAsState()
 
-    var selectedBannerIdx by remember { mutableIntStateOf(0) }
-    val bannerImages = listOf(
-        R.drawable.img_pybattle_banner_leaderboard,
-        R.drawable.img_pybattle_banner_add_cash,
-        R.drawable.img_pybattle_banner_booyah
+    val banners = listOf(
+        Triple(
+            R.drawable.img_pybattle_banner_booyah,
+            "₹1 ENTRY -> ₹10,000 MEGA BOOYAH",
+            "Bermuda Full Map Survival • Instant Prize Pool"
+        ),
+        Triple(
+            R.drawable.img_pybattle_banner_add_cash,
+            "CRYSTAL VAULT: +70 BONUS COINS",
+            "Scan UPI QR & Submit 12-Digit UTR for Admin Approval"
+        ),
+        Triple(
+            R.drawable.img_pybattle_banner_leaderboard,
+            "HALL OF CHAMPIONS LEADERBOARD",
+            "Daily, Weekly & Monthly Verified Podium Rewards"
+        ),
+        Triple(
+            R.drawable.img_pybattle_banner_telegram,
+            "ROOM ID UNLOCKS 10M BEFORE START",
+            "Instant Custom Room Credentials Inside Match Bunker"
+        )
     )
+    var activeBannerIndex by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(4000L)
+            activeBannerIndex = (activeBannerIndex + 1) % banners.size
+        }
+    }
+
+    val ongoingJoinedCount = registrations.count { reg ->
+        ongoing.any { it.id == reg.tournamentId }
+    }
+    val upcomingJoinedCount = registrations.count { reg ->
+        upcoming.any { it.id == reg.tournamentId }
+    }
+    val completedJoinedCount = registrations.count { reg ->
+        completed.any { it.id == reg.tournamentId } || reg.status == "PLAYED"
+    }
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(PlaytBgObsidian),
+            .testTag("home_lazy_column"),
         contentPadding = PaddingValues(bottom = 28.dp)
     ) {
-        // 1. Announcement Marquee Ticker
+        // 1. OriginOS 7 Atomic Broadcast Capsule
         item {
             Surface(
-                color = Color(0xFF231C35),
+                color = CrystalGlassSurface,
+                shape = RoundedCornerShape(22.dp),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    crystalSpecularBorderBrush(CrystalAuroraViolet)
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                shape = RoundedCornerShape(10.dp)
+                    .padding(horizontal = 14.dp, vertical = 6.dp)
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    modifier = Modifier
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(
+                                    Color.White.copy(alpha = 0.08f),
+                                    Color.Transparent
+                                )
+                            )
+                        )
+                        .padding(horizontal = 12.dp, vertical = 9.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Campaign,
-                        contentDescription = "Announcement",
-                        tint = PlaytCoinGold,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Surface(
+                        color = PlaytCrimson.copy(alpha = 0.85f),
+                        shape = RoundedCornerShape(50)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Sensors,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "NOTICE",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
                     Text(
                         text = config.announcementTicker,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Color.White,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = PlaytTextPrimary,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
         }
 
-        // 2. Hero Promotional Banner Carousel
+        // 2. OriginOS 7 Spatial Hero Window Card (28.dp Crystal Squircle)
         item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp)
-            ) {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
+            val (bannerRes, bannerHeadline, bannerSub) = banners[activeBannerIndex]
+            Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)) {
+                Surface(
+                    shape = RoundedCornerShape(28.dp),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.4.dp,
+                        crystalSpecularBorderBrush(CrystalAuroraBlue)
+                    ),
+                    shadowElevation = 18.dp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(155.dp)
-                        .border(1.dp, PlaytCardBorder, RoundedCornerShape(16.dp))
+                        .height(182.dp)
+                        .clip(RoundedCornerShape(28.dp))
                         .clickable {
-                            when (selectedBannerIdx) {
-                                0 -> viewModel.selectBottomTab(MainBottomTab.RANKING)
-                                1 -> viewModel.openManualQrScreen()
-                                else -> viewModel.openTournamentList("FULL_MAP")
+                            when (activeBannerIndex) {
+                                0 -> viewModel.openTournamentList("FULL_MAP")
+                                1 -> viewModel.selectBottomTab(MainBottomTab.WALLET)
+                                2 -> viewModel.selectBottomTab(MainBottomTab.RANKING)
+                                else -> viewModel.openOverlay(ActiveOverlayScreen.SUPPORT_CENTER)
                             }
                         }
                 ) {
-                    Image(
-                        painter = painterResource(id = bannerImages[selectedBannerIdx]),
-                        contentDescription = "PYBattle Featured Event Banner",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        AnimatedContent(
+                            targetState = bannerRes,
+                            label = "crystalHeroBanner"
+                        ) { targetRes ->
+                            Image(
+                                painter = painterResource(id = targetRes),
+                                contentDescription = bannerHeadline,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        // Frosted glass bottom sheet overlay inside hero card
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.verticalGradient(
+                                        listOf(
+                                            Color.Transparent,
+                                            Color(0x66060913),
+                                            Color(0xEB080D1D)
+                                        )
+                                    )
+                                )
+                        )
+                        Column(
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(18.dp)
+                        ) {
+                            Surface(
+                                color = Color.White.copy(alpha = 0.18f),
+                                shape = RoundedCornerShape(50),
+                                border = androidx.compose.foundation.BorderStroke(0.8.dp, CrystalSpecularHighlight)
+                            ) {
+                                Text(
+                                    text = "SPATIAL SPOTLIGHT #${activeBannerIndex + 1}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color.White,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = bannerHeadline,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White
+                            )
+                            Text(
+                                text = bannerSub,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = PlaytTextSecondary
+                            )
+                        }
+                    }
                 }
-
                 Spacer(modifier = Modifier.height(8.dp))
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    bannerImages.indices.forEach { idx ->
+                    banners.indices.forEach { idx ->
+                        val isSelected = idx == activeBannerIndex
                         Box(
                             modifier = Modifier
-                                .padding(horizontal = 4.dp)
-                                .size(if (idx == selectedBannerIdx) 20.dp else 8.dp, 8.dp)
-                                .clip(RoundedCornerShape(50))
-                                .background(if (idx == selectedBannerIdx) PlaytCrimson else PlaytCardBorder)
-                                .clickable { selectedBannerIdx = idx }
+                                .padding(horizontal = 3.dp)
+                                .height(6.dp)
+                                .width(if (isSelected) 24.dp else 7.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (isSelected) CrystalAuroraBlue else Color.White.copy(alpha = 0.22f)
+                                )
+                                .clickable { activeBannerIndex = idx }
                         )
                     }
                 }
             }
         }
 
-        // 3. Emergency Paid Contest Compliance Alert (if toggled off by Admin)
-        if (!config.paidContestsEnabled) {
-            item {
-                Surface(
-                    color = PlaytWarning.copy(alpha = 0.16f),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 6.dp)
-                        .border(1.dp, PlaytWarning, RoundedCornerShape(12.dp))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.Gavel, contentDescription = null, tint = PlaytWarning)
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = "Compliance Mode Active: Paid entry contests are currently paused by Admin. Free Practice Matches are open!",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = PlaytTextPrimary
-                        )
-                    }
-                }
-            }
-        }
-
-        // 4. My Contests Section (Ongoing / Upcoming / Completed — exact match to screenshot)
+        // 3. OriginOS 7 Atomic Widgets Row (Quick Actions + My Contests)
         item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 10.dp)
-            ) {
+            Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    OriginOsAtomicStatusTile(
+                        title = "Ongoing",
+                        subtitle = "Live Rooms",
+                        count = ongoingJoinedCount,
+                        accentColor = PlaytCrimson,
+                        icon = Icons.Default.Whatshot,
+                        onClick = { viewModel.openMyContests("ONGOING") },
+                        modifier = Modifier.weight(1f)
+                    )
+                    OriginOsAtomicStatusTile(
+                        title = "Upcoming",
+                        subtitle = "Joined Slots",
+                        count = upcomingJoinedCount,
+                        accentColor = CrystalAuroraBlue,
+                        icon = Icons.Default.Schedule,
+                        onClick = { viewModel.openMyContests("UPCOMING") },
+                        modifier = Modifier.weight(1f)
+                    )
+                    OriginOsAtomicStatusTile(
+                        title = "Results",
+                        subtitle = "Booyah Log",
+                        count = completedJoinedCount,
+                        accentColor = PlaytVerifiedGreen,
+                        icon = Icons.Default.MilitaryTech,
+                        onClick = { viewModel.openMyContests("COMPLETED") },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+
+        // 4. OriginOS 7 Spatial Bento Arena Cards
+        item {
+            Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = viewModel.tr("My Contests", "Mere Contests"),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = PlaytTextPrimary,
-                        fontWeight = FontWeight.ExtraBold
+                        text = viewModel.tr("CRYSTAL ARENA MODES", "ESPORTS MODE CHUNEIN"),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Black,
+                        color = PlaytTextPrimary
                     )
-                    TextButton(onClick = { viewModel.openMyContests("UPCOMING") }) {
+                    Surface(
+                        color = Color.White.copy(alpha = 0.08f),
+                        shape = RoundedCornerShape(50),
+                        border = androidx.compose.foundation.BorderStroke(0.8.dp, CrystalSpecularHighlight)
+                    ) {
                         Text(
-                            text = "${registrations.size} Joined →",
-                            color = PlaytCoinGold,
-                            style = MaterialTheme.typography.labelMedium
+                            text = "${upcoming.size + ongoing.size} Live Lobbies",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = CrystalAuroraBlue,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                         )
                     }
                 }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    MyContestStatusCard(
-                        title = viewModel.tr("Ongoing", "Chalu Match"),
-                        count = ongoing.size,
-                        icon = Icons.Default.PlayCircleFilled,
-                        accentColor = PlaytOrange,
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("my_contests_ongoing_card"),
-                        onClick = { viewModel.openMyContests("ONGOING") }
-                    )
-                    MyContestStatusCard(
-                        title = viewModel.tr("Upcoming", "Aane Wale"),
-                        count = upcoming.size,
-                        icon = Icons.Default.Schedule,
-                        accentColor = PlaytElectricBlue,
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("my_contests_upcoming_card"),
-                        onClick = { viewModel.openMyContests("UPCOMING") }
-                    )
-                    MyContestStatusCard(
-                        title = viewModel.tr("Completed", "Poore Hue"),
-                        count = completed.size,
-                        icon = Icons.Default.EmojiEvents,
-                        accentColor = PlaytVerifiedGreen,
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("my_contests_completed_card"),
-                        onClick = { viewModel.openMyContests("COMPLETED") }
-                    )
-                }
-            }
-        }
-
-        // 5. Esports Games Mode Cards (FF MAX Full Map, Free Match, Clash Squad, Lone Wolf)
-        item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 6.dp)
-            ) {
-                Text(
-                    text = viewModel.tr("Esports Games", "Esports Games"),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = PlaytTextPrimary,
-                    fontWeight = FontWeight.ExtraBold
-                )
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    EsportsGameModeImageCard(
-                        title = "FF MAX (OLD)",
-                        subtitle = "${upcoming.count { it.gameMode == "FULL_MAP" }} Matches Open",
-                        drawableRes = R.drawable.img_card_ff_max,
+                    CrystalArenaPosterCard(
+                        title = "FF MAX FULL MAP",
+                        subtitle = "Bermuda • Kalahari • 48 Slots",
+                        badge = "PRO POOL",
+                        badgeColor = PlaytCrimson,
+                        imageRes = R.drawable.img_card_ff_max,
+                        matchCount = upcoming.count { it.gameMode == "FULL_MAP" },
+                        onClick = { viewModel.openTournamentList("FULL_MAP") },
                         modifier = Modifier
                             .weight(1f)
-                            .testTag("mode_card_full_map"),
-                        onClick = { viewModel.openTournamentList("FULL_MAP") }
+                            .testTag("mode_card_full_map")
                     )
-                    EsportsGameModeImageCard(
-                        title = "Free Match",
-                        subtitle = "₹0 Entry • Daily Prizes",
-                        drawableRes = R.drawable.img_card_free_match,
+                    CrystalArenaPosterCard(
+                        title = "FREE MATCH",
+                        subtitle = "₹0 Entry • Daily Skill Scrims",
+                        badge = "ZERO FEE",
+                        badgeColor = PlaytVerifiedGreen,
+                        imageRes = R.drawable.img_card_free_match,
+                        matchCount = upcoming.count { it.gameMode == "FREE_MATCH" || it.entryFee == 0L },
+                        onClick = { viewModel.openTournamentList("FREE_MATCH") },
                         modifier = Modifier
                             .weight(1f)
-                            .testTag("mode_card_free_match"),
-                        onClick = { viewModel.openTournamentList("FREE_MATCH") }
+                            .testTag("mode_card_free_match")
                     )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    CompactModePillCard(
+                    OriginOsGlassModeChip(
                         title = "Clash Squad 4v4",
-                        tag = "UNLIMITED AMMO",
-                        accent = PlaytCrimson,
-                        modifier = Modifier.weight(1f),
-                        onClick = { viewModel.openTournamentList("CLASH_SQUAD") }
-                    )
-                    CompactModePillCard(
-                        title = "Lone Wolf 1v1",
-                        tag = "HEADSHOT ONLY",
+                        subtitle = "Custom Room • Unlimited Ammo",
                         accent = PlaytCoinGold,
-                        modifier = Modifier.weight(1f),
-                        onClick = { viewModel.openTournamentList("LONE_WOLF") }
+                        icon = Icons.Default.Groups,
+                        onClick = { viewModel.openTournamentList("CLASH_SQUAD") },
+                        modifier = Modifier.weight(1f)
+                    )
+                    OriginOsGlassModeChip(
+                        title = "Lone Wolf 1v1",
+                        subtitle = "Headshot Duel • Iron Cage",
+                        accent = CrystalAuroraBlue,
+                        icon = Icons.Default.GpsFixed,
+                        onClick = { viewModel.openTournamentList("LONE_WOLF") },
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
         }
 
-        // 6. Featured Live & Upcoming Matches Feed
+        // 5. Featured Tournament Crystal Cards
         item {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                    .padding(horizontal = 14.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = viewModel.tr("Featured Battle Rooms", "Live Aur Upcoming Rooms"),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = PlaytTextPrimary,
-                    fontWeight = FontWeight.ExtraBold
+                    text = viewModel.tr("FEATURED TOURNAMENTS", "LIVE AUR UPCOMING MATCHES"),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Black,
+                    color = PlaytTextPrimary
                 )
                 TextButton(onClick = { viewModel.openTournamentList("ALL") }) {
-                    Text("View All →", color = PlaytCrimson, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "View All >",
+                        color = CrystalAuroraBlue,
+                        fontWeight = FontWeight.Black
+                    )
                 }
             }
         }
 
-        items(upcoming.take(5), key = { it.id }) { tourney ->
-            val isJoined = registrations.any { it.tournamentId == tourney.id }
-            Box(modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)) {
+        val combinedFeatured = (ongoing + upcoming).take(6)
+        items(combinedFeatured, key = { it.id }) { tourney ->
+            val joinedReg = registrations.find { it.tournamentId == tourney.id }
+            Box(modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)) {
                 TournamentBattleCard(
                     tournament = tourney,
-                    isJoined = isJoined,
-                    bonusPercent = config.bonusUsagePercent,
+                    joinedRegistration = joinedReg,
                     onClick = { viewModel.openTournamentDetail(tourney.id) }
                 )
             }
@@ -770,135 +992,242 @@ fun Playt24HomeTab(
 }
 
 @Composable
-private fun MyContestStatusCard(
+private fun OriginOsAtomicStatusTile(
     title: String,
+    subtitle: String,
     count: Int,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
     accentColor: Color,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Card(
+    Surface(
+        color = CrystalGlassSurface,
+        shape = RoundedCornerShape(24.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            1.1.dp,
+            crystalSpecularBorderBrush(accentColor)
+        ),
         modifier = modifier
-            .height(104.dp)
-            .border(1.dp, PlaytCardBorder, RoundedCornerShape(14.dp))
-            .clickable { onClick() },
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark)
+            .clip(RoundedCornerShape(24.dp))
+            .clickable { onClick() }
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .fillMaxWidth()
+                .background(crystalSurfaceBrush(accentColor))
+                .padding(vertical = 13.dp, horizontal = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(26.dp)
+                        .clip(CircleShape)
+                        .background(accentColor.copy(alpha = 0.20f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = title,
+                        tint = accentColor,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "$count",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Black,
+                    color = PlaytTextPrimary
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Black,
+                color = Color.White
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.labelSmall,
+                color = PlaytTextSecondary,
+                fontSize = 10.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun CrystalArenaPosterCard(
+    title: String,
+    subtitle: String,
+    badge: String,
+    badgeColor: Color,
+    imageRes: Int,
+    matchCount: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        color = CrystalGlassSurface,
+        shape = RoundedCornerShape(26.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            1.3.dp,
+            crystalSpecularBorderBrush(badgeColor)
+        ),
+        shadowElevation = 14.dp,
+        modifier = modifier
+            .height(210.dp)
+            .clip(RoundedCornerShape(26.dp))
+            .clickable { onClick() }
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Image(
+                painter = painterResource(id = imageRes),
+                contentDescription = title,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0x1A060913),
+                                Color(0x99060913),
+                                Color(0xF2080E1E)
+                            )
+                        )
+                    )
+            )
+            Surface(
+                color = Color.White.copy(alpha = 0.18f),
+                shape = RoundedCornerShape(50),
+                border = androidx.compose.foundation.BorderStroke(0.8.dp, CrystalSpecularHighlight),
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(10.dp)
+            ) {
+                Text(
+                    text = badge,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White,
+                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 3.dp)
+                )
+            }
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(14.dp)
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = PlaytTextSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "$matchCount Lobbies",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = PlaytCoinGold,
+                        fontWeight = FontWeight.Black
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.16f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowForward,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(13.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OriginOsGlassModeChip(
+    title: String,
+    subtitle: String,
+    accent: Color,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        color = CrystalGlassSurface,
+        shape = RoundedCornerShape(24.dp),
+        border = androidx.compose.foundation.BorderStroke(1.1.dp, crystalSpecularBorderBrush(accent)),
+        modifier = modifier
+            .clip(RoundedCornerShape(24.dp))
+            .clickable { onClick() }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(crystalSurfaceBrush(accent))
+                .padding(13.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .clip(CircleShape)
-                    .background(accentColor.copy(alpha = 0.18f)),
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(accent.copy(alpha = 0.20f))
+                    .border(0.8.dp, CrystalSpecularHighlight, RoundedCornerShape(14.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = title,
-                    tint = accentColor,
-                    modifier = Modifier.size(24.dp)
+                    tint = accent,
+                    modifier = Modifier.size(20.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelMedium,
-                color = PlaytTextPrimary,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1
-            )
-            Text(
-                text = "$count Rooms",
-                style = MaterialTheme.typography.labelSmall,
-                color = PlaytTextSecondary
-            )
-        }
-    }
-}
-
-@Composable
-private fun EsportsGameModeImageCard(
-    title: String,
-    subtitle: String,
-    drawableRes: Int,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = modifier
-            .border(1.dp, PlaytCardBorder, RoundedCornerShape(16.dp))
-            .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark)
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Image(
-                painter = painterResource(id = drawableRes),
-                contentDescription = title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(175.dp)
-            )
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp, horizontal = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+            Spacer(modifier = Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Black,
                     color = PlaytTextPrimary,
-                    fontWeight = FontWeight.Bold
+                    maxLines = 1
                 )
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.labelSmall,
-                    color = PlaytCoinGold
+                    color = PlaytTextSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun CompactModePillCard(
-    title: String,
-    tag: String,
-    accent: Color,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = modifier
-            .border(1.dp, accent.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
-            .clickable { onClick() },
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = PlaytSurfaceElevated)
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = tag,
-                style = MaterialTheme.typography.labelSmall,
-                color = accent,
-                fontWeight = FontWeight.ExtraBold
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = PlaytTextPrimary,
-                fontWeight = FontWeight.Bold
-            )
         }
     }
 }
@@ -906,178 +1235,278 @@ private fun CompactModePillCard(
 @Composable
 fun TournamentBattleCard(
     tournament: Tournament,
-    isJoined: Boolean,
-    bonusPercent: Long,
+    joinedRegistration: Registration?,
     onClick: () -> Unit
 ) {
-    val progress = if (tournament.totalSlots > 0) {
+    val fillFraction = if (tournament.totalSlots > 0) {
         (tournament.filledSlots.toFloat() / tournament.totalSlots.toFloat()).coerceIn(0f, 1f)
     } else 0f
     val spotsLeft = (tournament.totalSlots - tournament.filledSlots).coerceAtLeast(0L)
-    val sdf = remember { SimpleDateFormat("hh:mm a • dd MMM", Locale.getDefault()) }
-    val formattedTime = remember(tournament.startTimeEpochMillis) {
-        sdf.format(Date(tournament.startTimeEpochMillis))
+    val timeFormat = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()) }
+    val formattedStart = remember(tournament.startTimeEpochMillis) {
+        timeFormat.format(Date(tournament.startTimeEpochMillis))
+    }
+    val isLive = tournament.status == "ONGOING"
+    val cardAccent = when {
+        joinedRegistration != null -> PlaytVerifiedGreen
+        isLive -> PlaytCrimson
+        else -> CrystalAuroraBlue
     }
 
-    Card(
+    // OriginOS 7 Translucent Crystal Tournament Widget
+    Surface(
+        color = CrystalGlassSurface,
+        shape = RoundedCornerShape(26.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            width = 1.2.dp,
+            brush = crystalSpecularBorderBrush(cardAccent)
+        ),
+        shadowElevation = 12.dp,
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, PlaytCardBorder, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(26.dp))
             .clickable { onClick() }
-            .testTag("tournament_card_${tournament.id}"),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark)
+            .testTag("tournament_card_${tournament.id}")
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
+        Column(
+            modifier = Modifier
+                .background(crystalSurfaceBrush(cardAccent))
+                .padding(16.dp)
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Surface(
-                        color = PlaytCrimson.copy(alpha = 0.18f),
-                        shape = RoundedCornerShape(8.dp)
+                        color = Color.White.copy(alpha = 0.10f),
+                        shape = RoundedCornerShape(50),
+                        border = androidx.compose.foundation.BorderStroke(0.8.dp, CrystalSpecularHighlight)
                     ) {
                         Text(
                             text = tournament.gameMode.replace("_", " "),
                             style = MaterialTheme.typography.labelSmall,
-                            color = PlaytCrimson,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            color = Color.White,
+                            fontWeight = FontWeight.Black,
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 3.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.width(6.dp))
                     Surface(
-                        color = PlaytSurfaceElevated,
-                        shape = RoundedCornerShape(8.dp)
+                        color = CrystalAuroraBlue.copy(alpha = 0.14f),
+                        shape = RoundedCornerShape(50)
                     ) {
                         Text(
                             text = "${tournament.mapName} • ${tournament.teamSize}",
                             style = MaterialTheme.typography.labelSmall,
-                            color = PlaytTextSecondary,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            color = CrystalAuroraBlue,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 3.dp)
                         )
                     }
                 }
 
-                Text(
-                    text = formattedTime,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = PlaytCoinGold
-                )
+                Surface(
+                    color = if (isLive) PlaytCrimson else Color.White.copy(alpha = 0.08f),
+                    shape = RoundedCornerShape(50),
+                    border = androidx.compose.foundation.BorderStroke(0.8.dp, CrystalSpecularHighlight)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = if (isLive) Icons.Default.Sensors else Icons.Default.AccessTime,
+                            contentDescription = null,
+                            tint = if (isLive) Color.White else PlaytCoinGold,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (isLive) "LIVE" else formattedStart,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isLive) Color.White else PlaytCoinGold,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
+                }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Text(
                 text = tournament.title,
                 style = MaterialTheme.typography.titleMedium,
-                color = PlaytTextPrimary,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Black,
+                color = PlaytTextPrimary
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Prize Pool / Per Kill / Booyah / Entry Metrics Row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(PlaytSurfaceElevated, RoundedCornerShape(12.dp))
-                    .padding(10.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
+            // Frosted Inner Crystal Telemetry Bar
+            Surface(
+                color = Color.White.copy(alpha = 0.06f),
+                shape = RoundedCornerShape(18.dp),
+                border = androidx.compose.foundation.BorderStroke(0.8.dp, CrystalSubtleEdge),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                MetricColumn(label = "PRIZE POOL", value = "🪙 ${tournament.prizePool}", valueColor = PlaytCoinGold)
-                MetricColumn(label = "PER KILL", value = "🪙 ${tournament.perKillPrize}", valueColor = PlaytTextPrimary)
-                MetricColumn(label = "BOOYAH #1", value = "🪙 ${tournament.booyahPrize}", valueColor = PlaytVerifiedGreen)
-                MetricColumn(
-                    label = "ENTRY FEE",
-                    value = if (tournament.entryFee == 0L) "FREE" else "🪙 ${tournament.entryFee}",
-                    valueColor = if (tournament.entryFee == 0L) PlaytVerifiedGreen else PlaytCrimson
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 10.dp, horizontal = 14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "PRIZE POOL",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = PlaytTextSecondary
+                        )
+                        Text(
+                            text = "₹${tournament.prizePool}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Black,
+                            color = PlaytCoinGold
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .height(26.dp)
+                            .background(CrystalSubtleEdge)
+                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "PER KILL",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = PlaytTextSecondary
+                        )
+                        Text(
+                            text = "₹${tournament.perKillPrize}",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Black,
+                            color = CrystalAuroraBlue
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .height(26.dp)
+                            .background(CrystalSubtleEdge)
+                    )
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = "BOOYAH #1",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = PlaytTextSecondary
+                        )
+                        Text(
+                            text = "₹${tournament.booyahPrize}",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Black,
+                            color = PlaytVerifiedGreen
+                        )
+                    }
+                }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Slot Progress Bar + Join CTA
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    LinearProgressIndicator(
-                        progress = { progress },
-                        color = PlaytCrimson,
-                        trackColor = PlaytSurfaceElevated,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(7.dp)
-                            .clip(RoundedCornerShape(50))
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "Only $spotsLeft spots left",
+                            text = if (spotsLeft == 0L) "Lobby Full" else "$spotsLeft Spots Left",
                             style = MaterialTheme.typography.labelSmall,
-                            color = PlaytOrange
+                            color = if (spotsLeft <= 5L) PlaytCrimson else PlaytTextSecondary,
+                            fontWeight = FontWeight.Bold
                         )
                         Text(
                             text = "${tournament.filledSlots}/${tournament.totalSlots}",
                             style = MaterialTheme.typography.labelSmall,
-                            color = PlaytTextSecondary
+                            color = PlaytTextPrimary,
+                            fontWeight = FontWeight.ExtraBold
                         )
                     }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    LinearProgressIndicator(
+                        progress = { fillFraction },
+                        color = if (spotsLeft <= 5L) PlaytCrimson else CrystalAuroraBlue,
+                        trackColor = Color.White.copy(alpha = 0.10f),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(7.dp)
+                            .clip(CircleShape)
+                    )
                 }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(14.dp))
 
-                Button(
-                    onClick = onClick,
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isJoined) PlaytVerifiedGreen else PlaytCrimson
-                    ),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                // OriginOS Pill Action Button
+                Surface(
+                    color = when {
+                        joinedRegistration != null -> PlaytVerifiedGreen
+                        tournament.entryFee == 0L -> CrystalAuroraBlue
+                        else -> PlaytCrimson
+                    },
+                    shape = RoundedCornerShape(50),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CrystalSpecularHighlight),
+                    modifier = Modifier.clickable { onClick() }
                 ) {
                     Text(
-                        text = if (isJoined) "JOINED ✓" else if (spotsLeft == 0L) "FULL" else "JOIN",
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White
+                        text = when {
+                            joinedRegistration != null -> "SLOT #${joinedRegistration.slotNumber}"
+                            tournament.entryFee == 0L -> "JOIN FREE"
+                            else -> "JOIN ₹${tournament.entryFee}"
+                        },
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Black,
+                        color = if (joinedRegistration != null || tournament.entryFee == 0L) Color.Black else Color.White,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
                     )
                 }
             }
 
-            if (tournament.entryFee > 0L) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "✨ Up to $bonusPercent% Bonus PlayCoins usable on entry • Room ID shared 10m before start",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = PlaytTextSecondary
-                )
+            if (joinedRegistration != null && tournament.roomPublished && tournament.roomId.isNotBlank()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Surface(
+                    color = PlaytVerifiedGreen.copy(alpha = 0.16f),
+                    shape = RoundedCornerShape(14.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, PlaytVerifiedGreen),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "ROOM ID: ${tournament.roomId}  •  PASS: ${tournament.roomPassword}",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Black,
+                            color = PlaytVerifiedGreen
+                        )
+                        Text(
+                            text = "OPEN",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
         }
-    }
-}
-
-@Composable
-private fun MetricColumn(
-    label: String,
-    value: String,
-    valueColor: Color
-) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = label, style = MaterialTheme.typography.labelSmall, color = PlaytTextSecondary)
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleMedium,
-            color = valueColor,
-            fontWeight = FontWeight.ExtraBold
-        )
     }
 }
 
@@ -1085,130 +1514,102 @@ private fun MetricColumn(
 fun TournamentListScreen(
     viewModel: Playt24ViewModel
 ) {
-    BackHandler { viewModel.navigateBack() }
-
     val upcoming by viewModel.upcomingTournaments.collectAsState()
     val ongoing by viewModel.ongoingTournaments.collectAsState()
     val registrations by viewModel.userRegistrations.collectAsState()
-    val config by viewModel.platformConfig.collectAsState()
     val modeFilter by viewModel.selectedGameModeFilter.collectAsState()
     val teamFilter by viewModel.selectedTeamSizeFilter.collectAsState()
 
+    BackHandler { viewModel.navigateBack() }
+
     val allMatches = remember(upcoming, ongoing, modeFilter, teamFilter) {
-        (upcoming + ongoing).filter { t ->
-            (modeFilter == "ALL" || t.gameMode == modeFilter) &&
-                (teamFilter == "ALL" || t.teamSize == teamFilter)
+        (ongoing + upcoming).filter { t ->
+            val modeOk = modeFilter == "ALL" ||
+                t.gameMode == modeFilter ||
+                (modeFilter == "FREE_MATCH" && t.entryFee == 0L)
+            val teamOk = teamFilter == "ALL" || t.teamSize == teamFilter
+            modeOk && teamOk
         }
     }
 
-    val modes = listOf("ALL", "FULL_MAP", "CLASH_SQUAD", "LONE_WOLF", "FREE_MATCH")
-    val teams = listOf("ALL", "SOLO", "DUO", "SQUAD")
+    Column(modifier = Modifier.fillMaxSize()) {
+        OverlayTopAppBar(
+            title = "CRYSTAL TOURNAMENT LOBBY",
+            onBack = { viewModel.navigateBack() }
+        )
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(PlaytBgObsidian)
-    ) {
-        // Sub-screen Header
-        Surface(color = PlaytSurfaceDark, shadowElevation = 4.dp) {
-            Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { viewModel.navigateBack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-                    }
-                    Text(
-                        text = "ESPORTS TOURNAMENTS",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 14.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            listOf(
+                "ALL" to "All Modes",
+                "FULL_MAP" to "FF MAX Full Map",
+                "CLASH_SQUAD" to "Clash Squad 4v4",
+                "LONE_WOLF" to "Lone Wolf 1v1",
+                "FREE_MATCH" to "Free Scrims"
+            ).forEach { (key, label) ->
+                val selected = modeFilter == key
+                FilterChip(
+                    selected = selected,
+                    onClick = { viewModel.setGameModeFilter(key) },
+                    label = {
+                        Text(
+                            text = label,
+                            fontWeight = if (selected) FontWeight.Black else FontWeight.Medium
+                        )
+                    },
+                    shape = RoundedCornerShape(50),
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = CrystalAuroraBlue,
+                        selectedLabelColor = Color.Black,
+                        containerColor = CrystalGlassSurface,
+                        labelColor = PlaytTextSecondary
                     )
-                }
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    modes.forEach { mode ->
-                        FilterChip(
-                            selected = modeFilter == mode,
-                            onClick = { viewModel.setGameModeFilter(mode) },
-                            label = { Text(mode.replace("_", " ")) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = PlaytCrimson,
-                                containerColor = PlaytSurfaceElevated
-                            )
-                        )
-                    }
-                }
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    teams.forEach { team ->
-                        FilterChip(
-                            selected = teamFilter == team,
-                            onClick = { viewModel.setTeamSizeFilter(team) },
-                            label = { Text(team) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = PlaytElectricBlue,
-                                containerColor = PlaytSurfaceElevated
-                            )
-                        )
-                    }
-                }
+                )
             }
         }
 
-        if (allMatches.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Default.SportsEsports,
-                        contentDescription = null,
-                        tint = PlaytCrimson,
-                        modifier = Modifier.size(56.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            listOf("ALL", "SOLO", "DUO", "SQUAD").forEach { size ->
+                val selected = teamFilter == size
+                AssistChip(
+                    onClick = { viewModel.setTeamSizeFilter(size) },
+                    shape = RoundedCornerShape(50),
+                    label = {
+                        Text(
+                            text = size,
+                            fontWeight = FontWeight.Black,
+                            color = if (selected) Color.Black else PlaytTextSecondary
+                        )
+                    },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = if (selected) PlaytCoinGold else CrystalGlassSurface
                     )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(
-                        text = "No Tournaments Match Your Filter",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = PlaytTextPrimary
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Button(
-                        onClick = {
-                            viewModel.setGameModeFilter("ALL")
-                            viewModel.setTeamSizeFilter("ALL")
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = PlaytCrimson)
-                    ) {
-                        Text("Reset Filters")
-                    }
-                }
+                )
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(14.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(allMatches, key = { it.id }) { tourney ->
-                    val isJoined = registrations.any { it.tournamentId == tourney.id }
-                    TournamentBattleCard(
-                        tournament = tourney,
-                        isJoined = isJoined,
-                        bonusPercent = config.bonusUsagePercent,
-                        onClick = { viewModel.openTournamentDetail(tourney.id) }
-                    )
-                }
+        }
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(allMatches, key = { it.id }) { tourney ->
+                val joinedReg = registrations.find { it.tournamentId == tourney.id }
+                TournamentBattleCard(
+                    tournament = tourney,
+                    joinedRegistration = joinedReg,
+                    onClick = { viewModel.openTournamentDetail(tourney.id) }
+                )
             }
         }
     }
@@ -1218,8 +1619,6 @@ fun TournamentListScreen(
 fun TournamentDetailScreen(
     viewModel: Playt24ViewModel
 ) {
-    BackHandler { viewModel.navigateBack() }
-
     val context = LocalContext.current
     val tourneyId by viewModel.selectedTournamentId.collectAsState()
     val upcoming by viewModel.upcomingTournaments.collectAsState()
@@ -1230,206 +1629,224 @@ fun TournamentDetailScreen(
     val profile by viewModel.userProfile.collectAsState()
     val config by viewModel.platformConfig.collectAsState()
 
+    BackHandler { viewModel.navigateBack() }
+
     val tournament = remember(tourneyId, upcoming, ongoing, completed) {
-        (upcoming + ongoing + completed).find { it.id == tourneyId }
+        (ongoing + upcoming + completed).find { it.id == tourneyId }
+    } ?: return
+
+    val myReg = userRegs.find { it.tournamentId == tournament.id }
+    val takenSlotsMap = remember(slotRegs) {
+        slotRegs.associateBy { it.slotNumber }
     }
 
-    if (tournament == null) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Tournament not found", color = PlaytTextPrimary)
-        }
-        return
+    var selectedSlot by remember(takenSlotsMap) {
+        val firstFree = (1L..tournament.totalSlots).firstOrNull { !takenSlotsMap.containsKey(it) } ?: 1L
+        mutableLongStateOf(firstFree)
     }
-
-    val myRegistration = remember(userRegs, tournament.id) {
-        userRegs.find { it.tournamentId == tournament.id }
-    }
-
+    var showJoinModal by remember { mutableStateOf(false) }
     var ffUidInput by remember(profile) { mutableStateOf(profile?.ffUid ?: "") }
     var ffIgnInput by remember(profile) { mutableStateOf(profile?.ffIgn ?: "") }
     var teammateInput by remember { mutableStateOf("") }
-    var selectedSlot by remember { mutableLongStateOf(1L) }
-    var showJoinModal by remember { mutableStateOf(false) }
 
-    var proofTextInput by remember(myRegistration) { mutableStateOf(myRegistration?.proofText ?: "") }
-    var disputeReasonInput by remember(myRegistration) { mutableStateOf(myRegistration?.disputeReason ?: "") }
+    var proofUrlInput by remember(myReg) { mutableStateOf(myReg?.proofText ?: "") }
+    var disputeReasonInput by remember(myReg) { mutableStateOf(myReg?.disputeReason ?: "") }
 
-    val breakdown = remember(tournament.entryFee, profile, config.bonusUsagePercent) {
-        calculateEntryFeeBreakdown(
-            entryFee = tournament.entryFee,
-            depositedCoins = profile?.depositedCoins ?: 0L,
-            winningCoins = profile?.winningCoins ?: 0L,
-            bonusCoins = profile?.bonusCoins ?: 0L,
-            bonusUsagePercent = config.bonusUsagePercent
+    val bonusUsable = ((tournament.entryFee * config.bonusUsagePercent) / 100L)
+        .coerceAtMost(profile?.bonusCoins ?: 0L)
+    val remainingMainFee = (tournament.entryFee - bonusUsable).coerceAtLeast(0L)
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        OverlayTopAppBar(
+            title = tournament.title,
+            onBack = { viewModel.navigateBack() }
         )
-    }
-
-    val takenSlots = remember(slotRegs) { slotRegs.map { it.slotNumber }.toSet() }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(PlaytBgObsidian)
-    ) {
-        // Header
-        Surface(color = PlaytSurfaceDark) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { viewModel.navigateBack() }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-                }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = tournament.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Text(
-                        text = "${tournament.gameMode} • ${tournament.mapName} • ${tournament.teamSize}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = PlaytCoinGold
-                    )
-                }
-            }
-        }
 
         LazyColumn(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(14.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // 1. Room ID & Password Vault Card
+            // 1. Crystal Match Summary Widget
             item {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = PlaytSurfaceElevated),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(1.dp, PlaytCoinGold.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                Surface(
+                    color = CrystalGlassSurface,
+                    shape = RoundedCornerShape(28.dp),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.3.dp,
+                        crystalSpecularBorderBrush(CrystalAuroraBlue)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
+                    Column(
+                        modifier = Modifier
+                            .background(crystalSurfaceBrush(CrystalAuroraBlue))
+                            .padding(18.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                color = Color.White.copy(alpha = 0.10f),
+                                shape = RoundedCornerShape(50),
+                                border = androidx.compose.foundation.BorderStroke(0.8.dp, CrystalSpecularHighlight)
+                            ) {
+                                Text(
+                                    text = "${tournament.gameMode} • ${tournament.mapName} • ${tournament.teamSize}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Black,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                )
+                            }
+                            Surface(
+                                color = PlaytVerifiedGreen.copy(alpha = 0.18f),
+                                shape = RoundedCornerShape(50)
+                            ) {
+                                Text(
+                                    text = tournament.status,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = PlaytVerifiedGreen,
+                                    fontWeight = FontWeight.Black,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text("TOTAL PRIZE POOL", style = MaterialTheme.typography.labelSmall, color = PlaytTextSecondary)
+                                Text(
+                                    text = "₹${tournament.prizePool} PlayCoins",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.Black,
+                                    color = PlaytCoinGold
+                                )
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text("ENTRY FEE", style = MaterialTheme.typography.labelSmall, color = PlaytTextSecondary)
+                                Text(
+                                    text = if (tournament.entryFee == 0L) "FREE" else "₹${tournament.entryFee}",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.Black,
+                                    color = CrystalAuroraBlue
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            PrizeBreakdownPill("BOOYAH #1", "₹${tournament.booyahPrize}", PlaytCoinGold, Modifier.weight(1f))
+                            PrizeBreakdownPill("RANK #2", "₹${tournament.rank2Prize}", CrystalAuroraBlue, Modifier.weight(1f))
+                            PrizeBreakdownPill("RANK #3", "₹${tournament.rank3Prize}", PlaytVerifiedGreen, Modifier.weight(1f))
+                            PrizeBreakdownPill("PER KILL", "₹${tournament.perKillPrize}", PlaytCrimson, Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
+
+            // 2. Crystal Custom Room Vault
+            item {
+                Surface(
+                    color = CrystalGlassSurface,
+                    shape = RoundedCornerShape(26.dp),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.1.dp,
+                        crystalSpecularBorderBrush(
+                            if (myReg != null && tournament.roomPublished) PlaytVerifiedGreen else PlaytCoinGold
+                        )
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .background(crystalSurfaceBrush(PlaytCoinGold))
+                            .padding(18.dp)
+                    ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.VpnKey, contentDescription = null, tint = PlaytCoinGold)
+                            Icon(
+                                imageVector = if (myReg != null && tournament.roomPublished) Icons.Default.LockOpen else Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = if (myReg != null && tournament.roomPublished) PlaytVerifiedGreen else PlaytCoinGold
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "CUSTOM ROOM CREDENTIALS VAULT",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = PlaytCoinGold,
-                                fontWeight = FontWeight.Bold
+                                text = "CUSTOM ROOM CREDENTIALS",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Black,
+                                color = PlaytTextPrimary
                             )
                         }
                         Spacer(modifier = Modifier.height(8.dp))
-                        if (tournament.roomPublished && tournament.roomId.isNotBlank()) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column {
-                                    Text("ROOM ID: ${tournament.roomId}", style = MaterialTheme.typography.labelLarge, color = Color.White)
-                                    Text("PASSWORD: ${tournament.roomPassword.ifBlank { "No Password" }}", style = MaterialTheme.typography.labelLarge, color = PlaytVerifiedGreen)
-                                }
-                                OutlinedButton(
-                                    onClick = {
-                                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                        clipboard.setPrimaryClip(ClipData.newPlainText("Room ID", tournament.roomId))
-                                        viewModel.showMessage("Copied Room ID ${tournament.roomId} to clipboard!")
-                                    }
-                                ) {
-                                    Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("COPY ID")
-                                }
-                            }
-                        } else {
+                        if (myReg == null) {
                             Text(
-                                text = "🔒 Room ID & Password will be published here 10 minutes before match start.",
+                                text = "Join a slot below to unlock the Free Fire Custom Room ID & Password.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = PlaytTextSecondary
                             )
-                        }
-                    }
-                }
-            }
-
-            // 2. Prize Pool Breakdown Table
-            item {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark),
-                    modifier = Modifier.fillMaxWidth().border(1.dp, PlaytCardBorder, RoundedCornerShape(16.dp))
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Text(
-                            text = "PERFORMANCE PRIZE POOL BREAKDOWN",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = PlaytTextPrimary,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        PrizeRow("🥇 Booyah (Rank #1)", "${tournament.booyahPrize} PlayCoins", PlaytCoinGold)
-                        PrizeRow("🥈 Runner-Up (Rank #2)", "${tournament.rank2Prize} PlayCoins", PlaytTextPrimary)
-                        PrizeRow("🥉 Rank #3", "${tournament.rank3Prize} PlayCoins", PlaytTextPrimary)
-                        PrizeRow("🎯 Every Confirmed Kill", "${tournament.perKillPrize} PlayCoins / Kill", PlaytVerifiedGreen)
-                    }
-                }
-            }
-
-            // 3. Interactive Slot Grid (Select Preferred Slot)
-            item {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark),
-                    modifier = Modifier.fillMaxWidth().border(1.dp, PlaytCardBorder, RoundedCornerShape(16.dp))
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Text(
-                            text = "SELECT LOBBY SLOT (${tournament.filledSlots}/${tournament.totalSlots} FILLED)",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = PlaytTextPrimary,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        val maxSlotsToShow = tournament.totalSlots.coerceAtMost(48L).toInt()
-                        val rows = (1..maxSlotsToShow).chunked(8)
-                        rows.forEach { rowSlots ->
+                        } else if (!tournament.roomPublished || tournament.roomId.isBlank()) {
+                            Text(
+                                text = "Slot #${myReg.slotNumber} Confirmed! Room ID & Password appear here 10 minutes before start.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = PlaytCoinGold
+                            )
+                        } else {
                             Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                rowSlots.forEach { slotNum ->
-                                    val isTaken = slotNum.toLong() in takenSlots
-                                    val isSelected = selectedSlot == slotNum.toLong()
-                                    Box(
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .height(32.dp)
-                                            .clip(RoundedCornerShape(6.dp))
-                                            .background(
-                                                when {
-                                                    isTaken -> PlaytDanger.copy(alpha = 0.25f)
-                                                    isSelected -> PlaytCrimson
-                                                    else -> PlaytSurfaceElevated
-                                                }
-                                            )
-                                            .border(
-                                                1.dp,
-                                                if (isSelected) PlaytCoinGold else PlaytCardBorder,
-                                                RoundedCornerShape(6.dp)
-                                            )
-                                            .clickable(enabled = !isTaken) { selectedSlot = slotNum.toLong() },
-                                        contentAlignment = Alignment.Center
-                                    ) {
+                                Surface(
+                                    color = Color.White.copy(alpha = 0.08f),
+                                    shape = RoundedCornerShape(16.dp),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, CrystalSpecularHighlight),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable {
+                                            val cb = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                            cb.setPrimaryClip(ClipData.newPlainText("Room ID", tournament.roomId))
+                                            viewModel.showMessage("Copied Room ID: ${tournament.roomId}")
+                                        }
+                                ) {
+                                    Column(modifier = Modifier.padding(12.dp)) {
+                                        Text("ROOM ID (TAP TO COPY)", style = MaterialTheme.typography.labelSmall, color = PlaytTextSecondary)
                                         Text(
-                                            text = "#$slotNum",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = if (isTaken) PlaytTextMuted else Color.White,
-                                            fontWeight = FontWeight.Bold
+                                            text = tournament.roomId,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Black,
+                                            color = PlaytVerifiedGreen
+                                        )
+                                    }
+                                }
+                                Surface(
+                                    color = Color.White.copy(alpha = 0.08f),
+                                    shape = RoundedCornerShape(16.dp),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, CrystalSpecularHighlight),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable {
+                                            val cb = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                            cb.setPrimaryClip(ClipData.newPlainText("Room Password", tournament.roomPassword))
+                                            viewModel.showMessage("Copied Password: ${tournament.roomPassword}")
+                                        }
+                                ) {
+                                    Column(modifier = Modifier.padding(12.dp)) {
+                                        Text("PASSWORD (TAP TO COPY)", style = MaterialTheme.typography.labelSmall, color = PlaytTextSecondary)
+                                        Text(
+                                            text = tournament.roomPassword,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Black,
+                                            color = PlaytCoinGold
                                         )
                                     }
                                 }
@@ -1439,63 +1856,161 @@ fun TournamentDetailScreen(
                 }
             }
 
-            // 4. Official Fair-Play Rules
+            // 3. Crystal 48-Slot Grid
             item {
-                Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = PlaytSurfaceDark),
-                    modifier = Modifier.fillMaxWidth().border(1.dp, PlaytCardBorder, RoundedCornerShape(16.dp))
+                Surface(
+                    color = CrystalGlassSurface,
+                    shape = RoundedCornerShape(26.dp),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.1.dp,
+                        crystalSpecularBorderBrush(CrystalAuroraViolet)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Text(
-                            text = "OFFICIAL FAIR-PLAY & ANTI-CHEAT RULES",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = PlaytCrimson,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = tournament.rulesText,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = PlaytTextSecondary
-                        )
+                    Column(
+                        modifier = Modifier
+                            .background(crystalSurfaceBrush(CrystalAuroraViolet))
+                            .padding(18.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "CRYSTAL SLOT MATRIX (1 - ${tournament.totalSlots})",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Black,
+                                color = PlaytTextPrimary
+                            )
+                            Text(
+                                text = "Slot #$selectedSlot",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = CrystalAuroraBlue,
+                                fontWeight = FontWeight.Black
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        val totalSlotsInt = tournament.totalSlots.toInt().coerceIn(2, 48)
+                        val rows = (1..totalSlotsInt).chunked(6)
+                        rows.forEach { rowSlots ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                rowSlots.forEach { slotNum ->
+                                    val regAtSlot = takenSlotsMap[slotNum.toLong()]
+                                    val isMine = myReg?.slotNumber == slotNum.toLong()
+                                    val isTaken = regAtSlot != null
+                                    val isPicked = selectedSlot == slotNum.toLong()
+
+                                    Surface(
+                                        color = when {
+                                            isMine -> PlaytVerifiedGreen
+                                            isTaken -> Color.White.copy(alpha = 0.04f)
+                                            isPicked -> CrystalAuroraBlue
+                                            else -> Color.White.copy(alpha = 0.10f)
+                                        },
+                                        shape = RoundedCornerShape(12.dp),
+                                        border = androidx.compose.foundation.BorderStroke(
+                                            1.dp,
+                                            if (isPicked || isMine) Color.White else CrystalSubtleEdge
+                                        ),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(36.dp)
+                                            .clickable(enabled = !isTaken && myReg == null) {
+                                                selectedSlot = slotNum.toLong()
+                                            }
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text(
+                                                text = if (isMine) "YOU" else "#$slotNum",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.Black,
+                                                color = when {
+                                                    isMine || isPicked -> Color.Black
+                                                    isTaken -> PlaytTextMuted
+                                                    else -> PlaytTextPrimary
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        if (myReg == null) {
+                            Button(
+                                onClick = { showJoinModal = true },
+                                colors = ButtonDefaults.buttonColors(containerColor = PlaytCrimson),
+                                shape = RoundedCornerShape(22.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(54.dp)
+                                    .testTag("open_join_modal_button")
+                            ) {
+                                Icon(Icons.Default.Bolt, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = if (tournament.entryFee == 0L) {
+                                        "JOIN SLOT #$selectedSlot • FREE ENTRY"
+                                    } else {
+                                        "JOIN SLOT #$selectedSlot • PAY ₹$remainingMainFee (+₹$bonusUsable BONUS)"
+                                    },
+                                    fontWeight = FontWeight.Black
+                                )
+                            }
+                        } else {
+                            Surface(
+                                color = PlaytVerifiedGreen.copy(alpha = 0.18f),
+                                shape = RoundedCornerShape(18.dp),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, PlaytVerifiedGreen),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = "REGISTERED • SLOT #${myReg.slotNumber} (${myReg.ffIgn})",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Black,
+                                    color = PlaytVerifiedGreen,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(12.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }
 
-            // 5. If Registered: Live Match Result Proof / Anti-Cheat Dispute Upload
-            if (myRegistration != null) {
+            if (myReg != null) {
                 item {
-                    Card(
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = PlaytSurfaceElevated),
-                        modifier = Modifier.fillMaxWidth().border(1.dp, PlaytVerifiedGreen, RoundedCornerShape(16.dp))
+                    Surface(
+                        color = CrystalGlassSurface,
+                        shape = RoundedCornerShape(26.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.1.dp, crystalSpecularBorderBrush(CrystalAuroraBlue)),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(14.dp)) {
+                        Column(
+                            modifier = Modifier
+                                .background(crystalSurfaceBrush(CrystalAuroraBlue))
+                                .padding(18.dp)
+                        ) {
                             Text(
-                                text = "YOUR REGISTRATION • SLOT #${myRegistration.slotNumber}",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = PlaytVerifiedGreen,
-                                fontWeight = FontWeight.Bold
+                                text = "BOOYAH PROOF & ANTI-CHEAT POV UPLOAD",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Black,
+                                color = CrystalAuroraBlue
                             )
-                            Text(
-                                text = "FF IGN: ${myRegistration.ffIgn} (UID: ${myRegistration.ffUid}) • Status: ${myRegistration.status}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = PlaytTextPrimary
-                            )
-                            if (myRegistration.prizeWon > 0L) {
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "🏆 Prize Won: ${myRegistration.prizeWon} Winning PlayCoins (Rank #${myRegistration.rankAchieved}, ${myRegistration.kills} Kills)",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = PlaytCoinGold
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(10.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                             OutlinedTextField(
-                                value = proofTextInput,
-                                onValueChange = { proofTextInput = it },
-                                label = { Text("Booyah Screenshot / HUD POV Link or Match Note") },
+                                value = proofUrlInput,
+                                onValueChange = { proofUrlInput = it },
+                                label = { Text("Booyah Screenshot / Kill Summary Note") },
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth()
                             )
@@ -1503,7 +2018,7 @@ fun TournamentDetailScreen(
                             OutlinedTextField(
                                 value = disputeReasonInput,
                                 onValueChange = { disputeReasonInput = it },
-                                label = { Text("Report Hacker / Dispute Reason (Optional)") },
+                                label = { Text("Report Suspect UID / HUD POV Link (Optional)") },
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth()
                             )
@@ -1511,57 +2026,23 @@ fun TournamentDetailScreen(
                             Button(
                                 onClick = {
                                     viewModel.submitMatchProofOrDispute(
-                                        registration = myRegistration,
-                                        proofText = proofTextInput,
+                                        registration = myReg,
+                                        proofText = proofUrlInput,
                                         disputeReason = disputeReasonInput
                                     )
                                 },
-                                colors = ButtonDefaults.buttonColors(containerColor = PlaytCrimson),
+                                colors = ButtonDefaults.buttonColors(containerColor = CrystalAuroraBlue),
+                                shape = RoundedCornerShape(18.dp),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Text("SUBMIT MATCH PROOF / DISPUTE", fontWeight = FontWeight.Bold)
+                                Text(
+                                    text = "SUBMIT PROOF TO ADMIN",
+                                    color = Color.Black,
+                                    fontWeight = FontWeight.Black
+                                )
                             }
                         }
                     }
-                }
-            }
-        }
-
-        // Bottom Sticky Join Bar
-        Surface(color = PlaytSurfaceDark, shadowElevation = 10.dp) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    Text(
-                        text = if (tournament.entryFee == 0L) "FREE ENTRY" else "ENTRY: 🪙 ${tournament.entryFee} Coins",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = PlaytCoinGold,
-                        fontWeight = FontWeight.ExtraBold
-                    )
-                    Text(
-                        text = "Bonus Usable: 🪙 ${breakdown.bonusUsed} • Deposit/Win: 🪙 ${breakdown.depositedUsed + breakdown.winningUsed}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = PlaytTextSecondary
-                    )
-                }
-
-                Button(
-                    onClick = { showJoinModal = true },
-                    enabled = myRegistration == null && tournament.status == "UPCOMING",
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (myRegistration != null) PlaytVerifiedGreen else PlaytCrimson
-                    ),
-                    modifier = Modifier.height(48.dp).testTag("open_join_modal_button")
-                ) {
-                    Text(
-                        text = if (myRegistration != null) "JOINED (SLOT #${myRegistration.slotNumber})" else "JOIN SLOT #$selectedSlot",
-                        fontWeight = FontWeight.ExtraBold
-                    )
                 }
             }
         }
@@ -1571,56 +2052,63 @@ fun TournamentDetailScreen(
         AlertDialog(
             onDismissRequest = { showJoinModal = false },
             containerColor = PlaytSurfaceDark,
+            shape = RoundedCornerShape(28.dp),
             title = {
                 Text(
-                    text = "Confirm Tournament Entry (Slot #$selectedSlot)",
-                    style = MaterialTheme.typography.titleLarge,
+                    text = "CONFIRM SLOT #$selectedSlot",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Black,
                     color = PlaytTextPrimary
                 )
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Surface(
-                        color = PlaytSurfaceElevated,
-                        shape = RoundedCornerShape(10.dp),
+                        color = Color.White.copy(alpha = 0.08f),
+                        shape = RoundedCornerShape(16.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, CrystalSpecularHighlight),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(10.dp)) {
-                            Text("Wallet Deduction Split (10% Bonus Rule):", style = MaterialTheme.typography.labelMedium, color = PlaytCoinGold)
-                            Text("• Bonus Coins Used: 🪙 ${breakdown.bonusUsed}", style = MaterialTheme.typography.bodySmall, color = PlaytTextPrimary)
-                            Text("• Deposited Coins Used: 🪙 ${breakdown.depositedUsed}", style = MaterialTheme.typography.bodySmall, color = PlaytTextPrimary)
-                            Text("• Winning Coins Used: 🪙 ${breakdown.winningUsed}", style = MaterialTheme.typography.bodySmall, color = PlaytTextPrimary)
-                            if (!breakdown.canAfford) {
-                                Text(
-                                    "⚠️ Shortfall: Need ${breakdown.shortfall} more PlayCoins. Tap 'Add Money' first.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = PlaytDanger
-                                )
-                            }
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(
+                                text = "3-BUCKET SMART DEDUCTION",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = PlaytCoinGold,
+                                fontWeight = FontWeight.Black
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Entry: ₹${tournament.entryFee}  |  10% Bonus: -₹$bonusUsable  |  Main Coins: ₹$remainingMainFee",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = PlaytTextPrimary,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
 
                     OutlinedTextField(
                         value = ffUidInput,
                         onValueChange = { ffUidInput = it },
-                        label = { Text("Free Fire MAX Numeric UID *") },
+                        label = { Text("Free Fire / FF MAX Numeric UID") },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth().testTag("join_ff_uid_input")
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("join_ff_uid_input")
                     )
-
                     OutlinedTextField(
                         value = ffIgnInput,
                         onValueChange = { ffIgnInput = it },
-                        label = { Text("Free Fire In-Game Name (IGN) *") },
+                        label = { Text("In-Game Name (Exact IGN)") },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth().testTag("join_ff_ign_input")
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("join_ff_ign_input")
                     )
-
                     if (tournament.teamSize != "SOLO") {
                         OutlinedTextField(
                             value = teammateInput,
                             onValueChange = { teammateInput = it },
-                            label = { Text("Teammate FF UIDs (${tournament.teamSize})") },
+                            label = { Text("Squad Teammates UIDs (Optional)") },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -1628,38 +2116,27 @@ fun TournamentDetailScreen(
                 }
             },
             confirmButton = {
-                if (breakdown.canAfford) {
-                    Button(
-                        onClick = {
-                            showJoinModal = false
-                            viewModel.joinTournament(
-                                tournament = tournament,
-                                ffUid = ffUidInput,
-                                ffIgn = ffIgnInput,
-                                teammateInfo = teammateInput,
-                                preferredSlot = selectedSlot
-                            )
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = PlaytCrimson),
-                        modifier = Modifier.testTag("confirm_join_tournament_button")
-                    ) {
-                        Text("CONFIRM & PAY 🪙 ${tournament.entryFee}", fontWeight = FontWeight.Bold)
-                    }
-                } else {
-                    Button(
-                        onClick = {
-                            showJoinModal = false
-                            viewModel.openManualQrScreen()
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = PlaytVerifiedGreen)
-                    ) {
-                        Text("ADD PLAYCOINS NOW", fontWeight = FontWeight.Bold)
-                    }
+                Button(
+                    onClick = {
+                        showJoinModal = false
+                        viewModel.joinTournament(
+                            tournament = tournament,
+                            ffUid = ffUidInput,
+                            ffIgn = ffIgnInput,
+                            teammateInfo = teammateInput,
+                            preferredSlot = selectedSlot
+                        )
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = PlaytCrimson),
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier.testTag("confirm_join_tournament_button")
+                ) {
+                    Text("JOIN NOW", fontWeight = FontWeight.Black)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showJoinModal = false }) {
-                    Text("Cancel", color = PlaytTextSecondary)
+                    Text("CANCEL", color = PlaytTextSecondary)
                 }
             }
         )
@@ -1667,13 +2144,36 @@ fun TournamentDetailScreen(
 }
 
 @Composable
-private fun PrizeRow(label: String, value: String, valueColor: Color) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+private fun PrizeBreakdownPill(
+    label: String,
+    amount: String,
+    accent: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        color = Color.White.copy(alpha = 0.07f),
+        shape = RoundedCornerShape(16.dp),
+        border = androidx.compose.foundation.BorderStroke(0.8.dp, accent.copy(alpha = 0.45f)),
+        modifier = modifier
     ) {
-        Text(text = label, style = MaterialTheme.typography.bodyMedium, color = PlaytTextSecondary)
-        Text(text = value, style = MaterialTheme.typography.bodyMedium, color = valueColor, fontWeight = FontWeight.Bold)
+        Column(
+            modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = PlaytTextSecondary,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = amount,
+                style = MaterialTheme.typography.labelLarge,
+                color = accent,
+                fontWeight = FontWeight.Black
+            )
+        }
     }
 }
 
@@ -1681,110 +2181,126 @@ private fun PrizeRow(label: String, value: String, valueColor: Color) {
 fun MyContestsScreen(
     viewModel: Playt24ViewModel
 ) {
-    BackHandler { viewModel.navigateBack() }
-
     val selectedTab by viewModel.selectedMyContestsTab.collectAsState()
+    val registrations by viewModel.userRegistrations.collectAsState()
     val upcoming by viewModel.upcomingTournaments.collectAsState()
     val ongoing by viewModel.ongoingTournaments.collectAsState()
     val completed by viewModel.completedTournaments.collectAsState()
-    val userRegs by viewModel.userRegistrations.collectAsState()
-    val config by viewModel.platformConfig.collectAsState()
 
-    val tabs = listOf("ONGOING", "UPCOMING", "COMPLETED")
-    val displayedMatches = when (selectedTab) {
-        "ONGOING" -> ongoing
-        "UPCOMING" -> upcoming
-        else -> completed
+    BackHandler { viewModel.navigateBack() }
+
+    val allTourneys = remember(upcoming, ongoing, completed) {
+        (ongoing + upcoming + completed).associateBy { it.id }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(PlaytBgObsidian)
-    ) {
-        Surface(color = PlaytSurfaceDark) {
-            Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { viewModel.navigateBack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-                    }
-                    Text(
-                        text = "$selectedTab MATCHES",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+    val filteredRegs = remember(registrations, selectedTab, allTourneys) {
+        registrations.filter { reg ->
+            val t = allTourneys[reg.tournamentId]
+            when (selectedTab) {
+                "ONGOING" -> t?.status == "ONGOING"
+                "UPCOMING" -> t?.status == "UPCOMING" && reg.status == "REGISTERED"
+                else -> t?.status == "COMPLETED" || reg.status == "PLAYED" || reg.status == "REFUNDED"
+            }
+        }
+    }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+    Column(modifier = Modifier.fillMaxSize()) {
+        OverlayTopAppBar(
+            title = "MY CONTESTS",
+            onBack = { viewModel.navigateBack() }
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            listOf("ONGOING", "UPCOMING", "COMPLETED").forEach { tab ->
+                val isSelected = selectedTab == tab
+                Surface(
+                    color = if (isSelected) CrystalAuroraBlue else CrystalGlassSurface,
+                    shape = RoundedCornerShape(50),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CrystalSpecularHighlight),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(50))
+                        .clickable { viewModel.openMyContests(tab) }
                 ) {
-                    tabs.forEach { tab ->
-                        Button(
-                            onClick = { viewModel.openMyContests(tab) },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (selectedTab == tab) PlaytCrimson else PlaytSurfaceElevated
-                            ),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(tab, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
+                    Text(
+                        text = tab,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Black,
+                        color = if (isSelected) Color.Black else PlaytTextSecondary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(vertical = 10.dp)
+                    )
                 }
             }
         }
 
-        if (displayedMatches.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Default.SportsEsports,
-                        contentDescription = null,
-                        tint = PlaytCoinGold,
-                        modifier = Modifier.size(64.dp)
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(filteredRegs, key = { it.id }) { reg ->
+                val t = allTourneys[reg.tournamentId]
+                if (t != null) {
+                    TournamentBattleCard(
+                        tournament = t,
+                        joinedRegistration = reg,
+                        onClick = { viewModel.openTournamentDetail(t.id) }
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(
-                        text = "Currently No $selectedTab Matches Are Available!",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = PlaytTextPrimary,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Join upcoming Battle Royale, Clash Squad, or Free Matches to see live room credentials and results here.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = PlaytTextSecondary,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-                    Button(
-                        onClick = { viewModel.openTournamentList("ALL") },
-                        colors = ButtonDefaults.buttonColors(containerColor = PlaytCrimson)
-                    ) {
-                        Text("EXPLORE UPCOMING ROOMS")
-                    }
                 }
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(14.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+        }
+    }
+}
+
+@Composable
+fun OverlayTopAppBar(
+    title: String,
+    onBack: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 8.dp)
+    ) {
+        Surface(
+            color = CrystalGlassSurface,
+            shape = RoundedCornerShape(26.dp),
+            border = androidx.compose.foundation.BorderStroke(
+                1.1.dp,
+                crystalSpecularBorderBrush(CrystalAuroraBlue)
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                items(displayedMatches, key = { it.id }) { tourney ->
-                    val isJoined = userRegs.any { it.tournamentId == tourney.id }
-                    TournamentBattleCard(
-                        tournament = tourney,
-                        isJoined = isJoined,
-                        bonusPercent = config.bonusUsagePercent,
-                        onClick = { viewModel.openTournamentDetail(tourney.id) }
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier.testTag("overlay_back_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = PlaytTextPrimary
                     )
                 }
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Black,
+                    color = PlaytTextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
